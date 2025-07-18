@@ -9,32 +9,35 @@
 
 <!-- Add the JavaScript -->
 <script>
-  document.getElementById("member-form").addEventListener("submit", function(e) {
+  const form = document.getElementById("registration-form");
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    const form = e.target;
     const data = {
-      name: form.name.value,
-      email: form.email.value,
-      phone: form.phone.value,
-      package: form.package.value,
-      sponsor: form.sponsor.value
+      name: document.getElementById("name").value,
+      email: document.getElementById("email").value,
+      phone: document.getElementById("phone").value,
+      location: document.getElementById("location").value
     };
 
-    fetch("https://script.google.com/macros/s/AKfycbxU_T5zMP1XAuVlOsoeuCALSMBvPGjgscyO-1qOvIJEsDcvkAj3RA5bGZ4iwHEb0xzGMQ/exec", {
+    fetch("YOUR_WEB_APP_URL_HERE", {
       method: "POST",
-      body: JSON.stringify(data),
       headers: {
         "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (response.ok) {
+        alert("Registration successful!");
+        form.reset();
+      } else {
+        alert("Registration failed: " + response.statusText);
       }
     })
-    .then(response => response.text())
-    .then(text => {
-      alert("✅ Registration Successful!");
-      form.reset();
-    })
     .catch(error => {
-      alert("❌ Registration Failed: " + error.message);
+      alert("Registration failed: " + error.message);
     });
   });
 </script>
+
