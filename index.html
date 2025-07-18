@@ -1,43 +1,116 @@
-<form id="member-form">
-  <input type="text" name="name" placeholder="Full Name" required />
-  <input type="email" name="email" placeholder="Email" required />
-  <input type="tel" name="phone" placeholder="Phone Number" required />
-  <input type="text" name="package" placeholder="Package" />
-  <input type="text" name="sponsor" placeholder="Sponsor" />
-  <button type="submit">Register</button>
-</form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LITA Foundation Uganda - Member Registration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
 
-<!-- Add the JavaScript -->
-<script>
-  const form = document.getElementById("registration-form");
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
 
-    const data = {
-      name: document.getElementById("name").value,
-      email: document.getElementById("email").value,
-      phone: document.getElementById("phone").value,
-      location: document.getElementById("location").value
-    };
+    h2 {
+      text-align: center;
+      color: #333;
+    }
 
-    fetch("YOUR_WEB_APP_URL_HERE", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)
-    })
-    .then(response => {
-      if (response.ok) {
-        alert("Registration successful!");
-        form.reset();
-      } else {
-        alert("Registration failed: " + response.statusText);
-      }
-    })
-    .catch(error => {
-      alert("Registration failed: " + error.message);
+    input[type="text"], input[type="email"], input[type="tel"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0 20px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #007bff;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Register as a Member</h2>
+    <form id="registration-form">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" name="name" required>
+
+      <label for="email">Email Address</label>
+      <input type="email" id="email" name="email" required>
+
+      <label for="phone">Phone Number</label>
+      <input type="tel" id="phone" name="phone" required>
+
+      <label for="location">Location</label>
+      <input type="text" id="location" name="location" required>
+
+      <button type="submit">Register</button>
+    </form>
+    <div class="footer">
+      &copy; 2025 LITA Foundation Uganda
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("registration-form");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const data = {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value,
+        location: document.getElementById("location").value
+      };
+
+      fetch("YOUR_WEB_APP_URL_HERE", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      })
+        .then(response => {
+          if (response.ok) {
+            alert("✅ Registration successful!");
+            form.reset();
+          } else {
+            alert("❌ Registration failed. Please try again.");
+          }
+        })
+        .catch(error => {
+          alert("❌ Error: " + error.message);
+        });
     });
-  });
-</script>
-
+  </script>
+</body>
+</html>
