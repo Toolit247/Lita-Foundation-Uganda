@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lita Foundation Uganda Registration & Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+    header {
+      background-color: #003366;
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+    }
+    main {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin: 1rem;
+      padding: 1.5rem;
+      width: 350px;
+    }
+    h2 {
+      color: #003366;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin: 0.5rem 0 0.2rem;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #003366;
+      color: white;
+      cursor: pointer;
+    }
+    .dashboard-info {
+      font-size: 1.1rem;
+      color: #333;
+    }
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lita Foundation Uganda Portal</h1>
+  </header>
+  <main>
+    <div class="card">
+      <h2>Member Registration</h2>
+      <form action="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec" method="POST">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" name="phone" required>
+
+        <label for="package">Starter Package</label>
+        <select id="package" name="package">
+          <option value="basic">Basic</option>
+          <option value="entrepreneur">Entrepreneur</option>
+          <option value="executive">Executive</option>
+        </select>
+
+        <label for="sponsor">Sponsor Name</label>
+        <input type="text" id="sponsor" name="sponsor">
+
+        <button type="submit">Register Member</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Member Dashboard</h2>
+      <div class="dashboard-info">
+        <p><strong>Total Members:</strong> 48</p>
+        <p><strong>Executive Members:</strong> 14</p>
+        <p><strong>Entrepreneur Members:</strong> 22</p>
+        <p><strong>Basic Members:</strong> 12</p>
+        <p><strong>Last Registered:</strong> Aciro Babra (14 Jul 2025)</p>
+      </div>
+      <iframe src="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=sharing"></iframe>
+    </div>
+  </main>
+</body>
+</html>
