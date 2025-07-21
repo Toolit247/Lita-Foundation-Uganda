@@ -7,84 +7,130 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 2rem;
-      background-color: #f5f5f5;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 0;
     }
-    form {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      max-width: 500px;
-      margin: auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-    input, select {
-      width: 100%;
-      margin-bottom: 1rem;
-      padding: 0.75rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    .message {
+
+    h1 {
       text-align: center;
-      margin-top: 1rem;
+      color: #14447a;
+    }
+
+    form label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    form input, form select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 30px;
+      width: 100%;
+      padding: 12px;
+      background: #14447a;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0f355f;
+    }
+
+    .message {
+      margin-top: 20px;
+      text-align: center;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h1>LITA Foundation Uganda</h1>
+    <form id="registration-form">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" name="Full Name" required>
 
-<h2 style="text-align:center;">LITA Foundation Member Registration</h2>
+      <label for="email">Email</label>
+      <input type="email" id="email" name="Email" required>
 
-<form id="registrationForm">
-  <input type="text" name="full_name" placeholder="Full Name" required />
-  <input type="email" name="email" placeholder="Email Address" required />
-  <input type="text" name="phone" placeholder="Phone Number" required />
-  <select name="gender" required>
-    <option value="">Select Gender</option>
-    <option value="Male">Male</option>
-    <option value="Female">Female</option>
-  </select>
-  <input type="text" name="location" placeholder="Location / Village" required />
-  <label for="upline">Upline ID (Optional)</label>
-<input type="text" id="upline" name="Upline ID" placeholder="Enter Upline ID">
-  <button type="submit">Register</button>
-  <div class="message" id="responseMessage"></div>
-</form>
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" name="Phone" required>
 
-<script>
-  const form = document.getElementById("registrationForm");
-  const responseMessage = document.getElementById("responseMessage");
+      <label for="gender">Gender</label>
+      <select id="gender" name="Gender" required>
+        <option value="">Select</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select>
 
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    const formData = new FormData(form);
+      <label for="location">Location</label>
+      <input type="text" id="location" name="Location" required>
 
-    fetch("https://script.google.com/macros/s/AKfycbxK4iChwzr0E2T6lXjd_H4MqRWpYhbolM4wxZ2rzj4zln82iuG8tS3CJyoJHHvpQaRmKA/exec", {
-      method: "POST",
-      body: formData,
-    })
-      .then(response => response.text())
-      .then(result => {
-        responseMessage.innerText = "Registration successful!";
-        responseMessage.style.color = "green";
-        form.reset();
-      })
-      .catch(error => {
-        console.error("Error!", error.message);
-        responseMessage.innerText = "Registration Failed: " + error.message;
-        responseMessage.style.color = "red";
-      });
-  });
-</script>
+      <label for="upline">Upline ID</label>
+      <input type="text" id="upline" name="Upline ID" required>
 
+      <button type="submit">Register</button>
+    </form>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("registration-form");
+    const messageEl = document.getElementById("message");
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => (data[key] = value));
+
+      const scriptURL = "https://script.google.com/macros/s/AKfycbxU_T5zMP1XAuVlOsoeuCALSMBvPGjgscyO-1qOvIJEsDcvkAj3RA5bGZ4iwHEb0xzGMQ/exec";
+
+      try {
+        const response = await fetch(scriptURL, {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+
+        if (response.ok) {
+          messageEl.textContent = "✅ Registration Successful!";
+          messageEl.style.color = "green";
+          form.reset();
+        } else {
+          throw new Error("Failed to submit");
+        }
+      } catch (error) {
+        messageEl.textContent = "❌ Registration Failed: " + error.message;
+        messageEl.style.color = "red";
+      }
+    });
+  </script>
 </body>
 </html>
