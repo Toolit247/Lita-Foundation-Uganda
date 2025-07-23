@@ -3,143 +3,87 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LITA Foundation Uganda - Member Registration</title>
+  <title>LITA Member Registration</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f4f8;
-      margin: 0;
-      padding: 0;
+      padding: 20px;
+      background-color: #f7f9fc;
     }
-
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 12px;
+    h2 {
+      text-align: center;
+    }
+    form {
+      max-width: 500px;
+      margin: auto;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-
-    h1 {
-      text-align: center;
-      color: #14447a;
-    }
-
-    form label {
-      display: block;
-      margin-top: 20px;
-      font-weight: bold;
-    }
-
-    form input, form select {
+    input, select, button {
       width: 100%;
       padding: 10px;
-      margin-top: 8px;
+      margin: 10px 0;
+      border-radius: 5px;
       border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
     }
-
     button {
-      margin-top: 30px;
-      width: 100%;
-      padding: 12px;
-      background: #14447a;
+      background-color: #007BFF;
       color: white;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
+      font-weight: bold;
       cursor: pointer;
     }
-
     button:hover {
-      background: #0f355f;
+      background-color: #0056b3;
     }
-
-    .message {
-      margin-top: 20px;
+    #status {
       text-align: center;
-      font-weight: bold;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>LITA Foundation Uganda</h1>
-    <form id="registration-form">
-      <label for="name">Full Name</label>
-      <input type="text" id="name" name="Full Name" required>
+  <h2>Member Registration - LITA Foundation Uganda</h2>
+  <form id="registration-form">
+    <input type="text" name="Full Name" placeholder="Full Name" required />
+    <input type="email" name="Email" placeholder="Email" required />
+    <input type="tel" name="Phone" placeholder="Phone Number" required />
+    
+    <select name="Gender" required>
+      <option value="">Select Gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+    </select>
 
-      <label for="email">Email</label>
-      <input type="email" id="email" name="Email" required>
+    <input type="text" name="Location" placeholder="Location" required />
+    <input type="text" name="Upline ID" placeholder="Upline ID" required />
 
-      <label for="phone">Phone</label>
-      <input type="tel" id="phone" name="Phone" required>
+    <button type="submit">Register</button>
+  </form>
 
-      <label for="gender">Gender</label>
-      <select id="gender" name="Gender" required>
-        <option value="">Select</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-        <option value="Other">Other</option>
-      </select>
-
-      <label for="location">Location</label>
-      <input type="text" id="location" name="Location" required>
-
-     <div class="form-group">
-  <label for="upline">Upline ID:</label>
-  <input type="text" class="form-control" id="upline" name="Upline ID" required>
-</div>
-      <button type="submit">Register</button>
-    </form>
-    <div class="message" id="message"></div>
-  </div>
+  <div id="status"></div>
 
   <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbx1-XjgaaknVMbEjCmetKsOVtEFPzHcYMZyq7eWx8STeg7IeOuQC5L8XgAKr5qSIfGIJg/exec";
     const form = document.getElementById("registration-form");
-    const messageEl = document.getElementById("message");
+    const status = document.getElementById("status");
 
-    form.addEventListener("submit", async function (e) {
+    form.addEventListener("submit", e => {
       e.preventDefault();
-
-      const formData = new FormData(form);
-      const data = {};
-      formData.forEach((value, key) => (data[key] = value));
-
-      const scriptURL = "https://script.google.com/macros/s/AKfycbx1-XjgaaknVMbEjCmetKsOVtEFPzHcYMZyq7eWx8STeg7IeOuQC5L8XgAKr5qSIfGIJg/exec";
-
-      try {
-       const form = document.forms["registration-form"];
-
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  fetch(scriptURL, {
-    method: "POST",
-    body: JSON.stringify({
-      "Full Name": form["Full Name"].value,
-      "Email": form["Email"].value,
-      "Phone": form["Phone"].value,
-      "Gender": form["Gender"].value,
-      "Location": form["Location"].value,
-      "Upline ID": form["Upline ID"].value
-    }),
-    headers: {
-      "Content-Type": "application/json"
-    }
-  })
-  .then(response => {
-    if (response.ok) {
-      alert("✅ Registration Successful!");
-      form.reset();
-    } else {
-      alert("❌ Registration Failed: Server error");
-    }
-  })
-  .catch(error => {
-    console.error("Error!", error.message);
-    alert("❌ Registration Failed: Failed to fetch");
-  });
-});
+      fetch(scriptURL, {
+        method: "POST",
+        body: new FormData(form),
+      })
+      .then(response => {
+        status.innerHTML = "✅ Registration successful!";
+        form.reset();
+      })
+      .catch(error => {
+        console.error("Error!", error.message);
+        status.innerHTML = "❌ Registration failed. Please try again.";
+      });
+    });
+  </script>
+</body>
+</html>
