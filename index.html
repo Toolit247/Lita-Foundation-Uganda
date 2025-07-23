@@ -88,9 +88,10 @@
       <label for="location">Location</label>
       <input type="text" id="location" name="Location" required>
 
-      <label for="upline">Upline ID</label>
-      <input type="text" id="upline" name="Upline ID" required>
-
+     <div class="form-group">
+  <label for="upline">Upline ID:</label>
+  <input type="text" class="form-control" id="upline" name="Upline ID" required>
+</div>
       <button type="submit">Register</button>
     </form>
     <div class="message" id="message"></div>
@@ -110,27 +111,35 @@
       const scriptURL = "https://script.google.com/macros/s/AKfycbx1-XjgaaknVMbEjCmetKsOVtEFPzHcYMZyq7eWx8STeg7IeOuQC5L8XgAKr5qSIfGIJg/exec";
 
       try {
-        const response = await fetch(scriptURL, {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        });
+       const form = document.forms["registration-form"];
 
-        if (response.ok) {
-          messageEl.textContent = "✅ Registration Successful!";
-          messageEl.style.color = "green";
-          form.reset();
-        } else {
-          throw new Error("Failed to submit");
-        }
-      } catch (error) {
-        messageEl.textContent = "❌ Registration Failed: " + error.message;
-        messageEl.style.color = "red";
-      }
-    });
-  </script>
-</body>
-</html>
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  fetch(scriptURL, {
+    method: "POST",
+    body: JSON.stringify({
+      "Full Name": form["Full Name"].value,
+      "Email": form["Email"].value,
+      "Phone": form["Phone"].value,
+      "Gender": form["Gender"].value,
+      "Location": form["Location"].value,
+      "Upline ID": form["Upline ID"].value
+    }),
+    headers: {
+      "Content-Type": "application/json"
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      alert("✅ Registration Successful!");
+      form.reset();
+    } else {
+      alert("❌ Registration Failed: Server error");
+    }
+  })
+  .catch(error => {
+    console.error("Error!", error.message);
+    alert("❌ Registration Failed: Failed to fetch");
+  });
+});
