@@ -1,107 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Member Registration - LITA Foundation</title>
+  <meta charset="UTF-8">
+  <title>LITA Foundation Member Registration</title>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      padding: 40px;
+      background-color: #f4f6f8;
+      padding: 20px;
     }
     form {
       background: white;
-      padding: 30px;
+      padding: 20px;
       border-radius: 8px;
       max-width: 500px;
       margin: auto;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    input, select, button {
+    input, select {
       width: 100%;
       padding: 10px;
-      margin: 12px 0;
+      margin-top: 10px;
+      margin-bottom: 20px;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
     button {
-      background-color: #008CBA;
+      padding: 10px 20px;
+      background-color: #007bff;
       color: white;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
     }
-    #message {
+    .message {
       text-align: center;
-      margin-top: 20px;
       font-weight: bold;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
 
-  <h2 style="text-align:center;">LITA Foundation Member Registration</h2>
+  <h2 style="text-align:center;">LITA Foundation Uganda - Member Registration</h2>
 
-  <form id="registration-form">
-    <input type="text" name="FullName" placeholder="Full Name" required />
-    <input type="email" name="Email" placeholder="Email" required />
-    <input type="tel" name="Phone" placeholder="Phone Number" required />
-    
+  <form id="registrationForm">
+    <label for="fullName">Full Name</label>
+    <input type="text" name="Full Name" required>
+
+    <label for="email">Email</label>
+    <input type="email" name="Email" required>
+
+    <label for="phone">Phone</label>
+    <input type="text" name="Phone" required>
+
+    <label for="gender">Gender</label>
     <select name="Gender" required>
-      <option value="" disabled selected>Select Gender</option>
+      <option value="">--Select Gender--</option>
       <option value="Male">Male</option>
       <option value="Female">Female</option>
-      <option value="Other">Other</option>
     </select>
-    
-    <input type="text" name="Location" placeholder="Location" required />
-    <input type="text" name="UplineID" placeholder="Upline ID (Required)" required />
+
+    <label for="location">Location</label>
+    <input type="text" name="Location" required>
+
+    <label for="upline">Upline ID</label>
+    <input type="text" name="Upline ID" required>
 
     <button type="submit">Register</button>
   </form>
 
-  <div id="message"></div>
+  <div class="message" id="message"></div>
 
-  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
   <script>
-    emailjs.init("hZgalRaZwSRy1Zgp4"); // Your EmailJS public key
+    emailjs.init("hZgalRaZwSRy1Zgp4"); // Your EmailJS Public Key
 
-    const form = document.getElementById("registration-form");
-    const messageBox = document.getElementById("message");
-
-    form.addEventListener("submit", function (e) {
+    document.getElementById("registrationForm").addEventListener("submit", function(e) {
       e.preventDefault();
+      const form = e.target;
+      const data = new FormData(form);
+      const url = "https://script.google.com/macros/s/AKfycbyziV-dkWoEkk14BYzqzXH0QS2EglwRx4LHLZFbo4tLupyghkaO_4a017OiWHmWs6Uy-w/exec";
 
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
-
-      messageBox.textContent = "Submitting... ⏳";
-
-      // Submit to Google Sheets via updated Web App URL
-      fetch("https://script.google.com/macros/s/AKfycbyziV-dkWoEkk14BYzqzXH0QS2EglwRx4LHLZFbo4tLupyghkaO_4a017OiWHmWs6Uy-w/exec", {
+      fetch(url, {
         method: "POST",
-        body: formData,
+        body: data
       })
-      .then(res => {
-        if (res.ok) {
-          // Send confirmation email
-          return emailjs.send("service_mrqs34o", "template_svacje4", {
-            to_email: data.Email,
-            to_name: data.FullName,
-            message: `Dear ${data.FullName}, your registration with LITA Foundation Uganda was successful.`,
-          });
+      .then(response => response.text())
+      .then(result => {
+        if (result === "Success") {
+          sendEmailConfirmation(data);
+          document.getElementById("message").textContent = "✅ Registration successful! A confirmation email has been sent.";
+          form.reset();
         } else {
-          throw new Error("Google Sheets submission failed.");
+          document.getElementById("message").textContent = "❌ Registration failed. Please try again.";
         }
       })
-      .then(() => {
-        messageBox.textContent = "✅ Registration successful & confirmation email sent!";
-        form.reset();
-      })
-      .catch(err => {
-        console.error("Error:", err);
-        messageBox.textContent = "❌ Registration failed. Please try again.";
+      .catch(error => {
+        document.getElementById("message").textContent = "❌ Error: " + error.message;
       });
     });
+
+    function sendEmailConfirmation(data) {
+      const fullName = data.get("Full Name");
+      const email = data.get("Email");
+      const phone = data.get("Phone");
+      const location = data.get("Location");
+      const upline = data.get("Upline ID");
+
+      emailjs.send("service_mrqs34o", "template_svacje4", {
+        full_name: fullName,
+        to_email: email,
+        phone: phone,
+        location: location,
+        upline: upline
+      }).then(() => {
+        console.log("✅ Email sent.");
+      }).catch(error => {
+        console.error("❌ Failed to send email:", error);
+      });
+    }
   </script>
+
 </body>
 </html>
