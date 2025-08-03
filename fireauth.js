@@ -1,4 +1,4 @@
-// Firebase Config (Ensure this is from the correct Firebase Project)
+// Firebase Config
 var firebaseConfig = {
   apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
   authDomain: "lita-platform-bffdc.firebaseapp.com",
@@ -10,6 +10,7 @@ var firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+console.log("Firebase Initialized");  // Debug Log
 
 // Sign In Function
 document.getElementById("loginForm").addEventListener("submit", function(e) {
@@ -17,8 +18,11 @@ document.getElementById("loginForm").addEventListener("submit", function(e) {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
+  console.log("Attempting Login with: ", email); // Debug Log
+
   firebase.auth().signInWithEmailAndPassword(email, password)
     .then(userCredential => {
+      console.log("Login Success:", userCredential); // Debug Log
       const userEmail = userCredential.user.email;
       if (userEmail === "toolitambrosehenry@gmail.com") {
         window.location.href = "admin.html";
@@ -27,6 +31,7 @@ document.getElementById("loginForm").addEventListener("submit", function(e) {
       }
     })
     .catch(error => {
+      console.error("Login Failed:", error);  // Debug Log
       document.getElementById("loginMessage").textContent = "❌ " + error.message;
     });
 });
