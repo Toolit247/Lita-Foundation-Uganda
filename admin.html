@@ -11,8 +11,9 @@
 <body>
   <h2>Admin Dashboard</h2>
   <button id="logout">Logout</button>
-  <h3>All Member Submissions</h3>
-  <table border="1" id="submissionsTable">
+
+  <h3>Registered Members</h3>
+  <table border="1" id="membersTable">
     <thead>
       <tr>
         <th>Full Name</th>
@@ -21,7 +22,7 @@
         <th>Gender</th>
         <th>Location</th>
         <th>Upline ID</th>
-        <th>Business Progress</th>
+        <th>Progress History</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -44,28 +45,46 @@
       if (!user || user.email !== "toolitambrosehenry@gmail.com") {
         window.location.href = "signin.html";
       } else {
-        loadSubmissions();
+        loadMembers();
       }
     });
 
-    function loadSubmissions() {
-      db.collection("submissions").onSnapshot(snapshot => {
-        const tbody = document.querySelector("#submissionsTable tbody");
+    function loadMembers() {
+      db.collection("submissions").get().then(snapshot => {
+        const tbody = document.querySelector("#membersTable tbody");
         tbody.innerHTML = "";
+
         snapshot.forEach(doc => {
           const data = doc.data();
-          const row = `<tr>
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
             <td>${data.fullName}</td>
             <td>${data.email}</td>
             <td>${data.phone}</td>
             <td>${data.gender}</td>
             <td>${data.location}</td>
             <td>${data.upline}</td>
-            <td>${data.businessProgress || 'N/A'}</td>
-          </tr>`;
-          tbody.innerHTML += row;
+            <td><button onclick="viewProgress('${doc.id}')">View Progress</button></td>
+          `;
+          tbody.appendChild(tr);
         });
       });
+    }
+
+    function viewProgress(docId) {
+      const progressWindow = window.open("", "Progress History", "width=600,height=400");
+      progressWindow.document.write("<h2>Progress History</h2><ul id='progressList'></ul>");
+
+      db.collection("submissions").doc(docId).collection("progressHistory")
+        .orderBy("timestamp", "desc")
+        .get().then(snapshot => {
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const li = progressWindow.document.createElement("li");
+            li.textContent = `${data.timestamp.toDate().toLocaleString()} - ${data.progress}`;
+            progressWindow.document.getElementById("progressList").appendChild(li);
+          });
+        });
     }
 
     document.getElementById("logout").addEventListener("click", () => {
