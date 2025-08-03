@@ -1,4 +1,6 @@
-// Initialize Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
   authDomain: "lita-platform-bffdc.firebaseapp.com",
@@ -9,16 +11,15 @@ const firebaseConfig = {
   measurementId: "G-44JEYP8ZHD"
 };
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-// Login Form Submission
 document.getElementById("loginForm").addEventListener("submit", function(e) {
   e.preventDefault();
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
 
-  auth.signInWithEmailAndPassword(email, password)
+  signInWithEmailAndPassword(auth, email, password)
     .then(userCredential => {
       const userEmail = userCredential.user.email;
       if (userEmail === "toolitambrosehenry@gmail.com") {
