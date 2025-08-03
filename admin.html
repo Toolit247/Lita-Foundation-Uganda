@@ -6,12 +6,12 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="dashboard.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h2>Admin Dashboard</h2>
   <button id="logout">Logout</button>
-
   <h3>Registered Members</h3>
   <table border="1" id="membersTable">
     <thead>
@@ -22,12 +22,12 @@
         <th>Gender</th>
         <th>Location</th>
         <th>Upline ID</th>
-        <th>Progress History</th>
+        <th>Current Business Progress</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
-
+  <button id="exportCSV">Export to CSV</button>
   <script>
     var firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
@@ -50,42 +50,40 @@
     });
 
     function loadMembers() {
-      db.collection("submissions").get().then(snapshot => {
-        const tbody = document.querySelector("#membersTable tbody");
-        tbody.innerHTML = "";
-
-        snapshot.forEach(doc => {
+      const tbody = document.querySelector("#membersTable tbody");
+      tbody.innerHTML = "";
+      db.collection("submissions").get().then(querySnapshot => {
+        querySnapshot.forEach(doc => {
           const data = doc.data();
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
+          const row = `<tr>
             <td>${data.fullName}</td>
             <td>${data.email}</td>
             <td>${data.phone}</td>
             <td>${data.gender}</td>
             <td>${data.location}</td>
             <td>${data.upline}</td>
-            <td><button onclick="viewProgress('${doc.id}')">View Progress</button></td>
-          `;
-          tbody.appendChild(tr);
+            <td>${data.businessProgress || 'N/A'}</td>
+          </tr>`;
+          tbody.innerHTML += row;
         });
       });
     }
 
-    function viewProgress(docId) {
-      const progressWindow = window.open("", "Progress History", "width=600,height=400");
-      progressWindow.document.write("<h2>Progress History</h2><ul id='progressList'></ul>");
-
-      db.collection("submissions").doc(docId).collection("progressHistory")
-        .orderBy("timestamp", "desc")
-        .get().then(snapshot => {
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const li = progressWindow.document.createElement("li");
-            li.textContent = `${data.timestamp.toDate().toLocaleString()} - ${data.progress}`;
-            progressWindow.document.getElementById("progressList").appendChild(li);
-          });
+    document.getElementById("exportCSV").addEventListener("click", () => {
+      db.collection("submissions").get().then(querySnapshot => {
+        let csvContent = "data:text/csv;charset=utf-8,Full Name,Email,Phone,Gender,Location,Upline ID,Business Progress\n";
+        querySnapshot.forEach(doc => {
+          const d = doc.data();
+          csvContent += `${d.fullName},${d.email},${d.phone},${d.gender},${d.location},${d.upline},${d.businessProgress || 'N/A'}\n`;
         });
-    }
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "LITA_Members.csv");
+        document.body.appendChild(link);
+        link.click();
+      });
+    });
 
     document.getElementById("logout").addEventListener("click", () => {
       firebase.auth().signOut().then(() => window.location.href = "signin.html");
