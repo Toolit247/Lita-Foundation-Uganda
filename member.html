@@ -25,6 +25,9 @@
 
   <div id="updateMessage"></div>
 
+  <h3>Your Progress History</h3>
+  <ul id="progressHistory"></ul>
+
   <script>
     var firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
@@ -37,6 +40,8 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+    let memberDocRef;
 
     firebase.auth().onAuthStateChanged(user => {
       if (!user) {
@@ -53,6 +58,7 @@
           tbody.innerHTML = "";
           querySnapshot.forEach(doc => {
             const data = doc.data();
+            memberDocRef = doc.ref;
             tbody.innerHTML += `
               <tr><td>Full Name</td><td>${data.fullName}</td></tr>
               <tr><td>Email</td><td>${data.email}</td></tr>
@@ -60,23 +66,41 @@
               <tr><td>Gender</td><td>${data.gender}</td></tr>
               <tr><td>Location</td><td>${data.location}</td></tr>
               <tr><td>Upline ID</td><td>${data.upline}</td></tr>
-              <tr><td>Business Progress</td><td>${data.businessProgress || 'N/A'}</td></tr>
+              <tr><td>Current Business Progress</td><td>${data.businessProgress || 'N/A'}</td></tr>
             `;
-            document.getElementById("progressForm").onsubmit = function(e) {
-              e.preventDefault();
-              const progress = document.getElementById("businessProgress").value;
-              doc.ref.update({ businessProgress: progress })
-                .then(() => {
-                  document.getElementById("updateMessage").textContent = "✅ Progress updated successfully!";
-                  loadMemberData(email);
-                })
-                .catch(err => {
-                  document.getElementById("updateMessage").textContent = "❌ Failed to update: " + err.message;
-                });
-            }
+            loadProgressHistory(doc.ref);
           });
         });
     }
+
+    function loadProgressHistory(docRef) {
+      docRef.collection("progressHistory").orderBy("timestamp", "desc").get()
+        .then(snapshot => {
+          const historyList = document.getElementById("progressHistory");
+          historyList.innerHTML = "";
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const listItem = document.createElement("li");
+            listItem.textContent = `${data.timestamp.toDate().toLocaleString()} - ${data.progress}`;
+            historyList.appendChild(listItem);
+          });
+        });
+    }
+
+    document.getElementById("progressForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const progress = document.getElementById("businessProgress").value;
+      const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+
+      memberDocRef.update({ businessProgress: progress }).then(() => {
+        memberDocRef.collection("progressHistory").add({ progress, timestamp }).then(() => {
+          document.getElementById("updateMessage").textContent = "✅ Progress updated successfully!";
+          loadProgressHistory(memberDocRef);
+        });
+      }).catch(err => {
+        document.getElementById("updateMessage").textContent = "❌ Failed to update: " + err.message;
+      });
+    });
 
     document.getElementById("logout").addEventListener("click", () => {
       firebase.auth().signOut().then(() => window.location.href = "signin.html");
