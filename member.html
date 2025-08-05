@@ -1,78 +1,150 @@
-<script>
-  var firebaseConfig = {
-    apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
-    authDomain: "lita-platform-bffdc.firebaseapp.com",
-    projectId: "lita-platform-bffdc",
-    storageBucket: "lita-platform-bffdc.appspot.com",
-    messagingSenderId: "387943226211",
-    appId: "1:387943226211:web:0127c409e0f880df391156"
-  };
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Member Dashboard - LITA Foundation</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>Member Dashboard</h2>
+  <button id="logout">Logout</button>
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  <h3>Your Registration Details</h3>
+  <table border="1" id="userDetailsTable">
+    <tbody></tbody>
+  </table>
 
-  let memberDocRef;
+  <h3>Update Business Progress</h3>
+  <form id="progressForm">
+    <textarea id="businessProgress" placeholder="Describe your current business progress..." required></textarea>
+    <button type="submit">Update Progress</button>
+  </form>
 
-  firebase.auth().onAuthStateChanged(user => {
-    if (!user) {
-      window.location.href = "signin.html";
-    } else {
-      loadMemberData(user.email);
-    }
-  });
+  <div id="updateMessage"></div>
 
-  function loadMemberData(email) {
-    db.collection("members").where("email", "==", email).get()
-      .then(querySnapshot => {
-        const tbody = document.querySelector("#userDetailsTable tbody");
-        tbody.innerHTML = "";
-        querySnapshot.forEach(doc => {
-          const data = doc.data();
-          memberDocRef = doc.ref;
-          tbody.innerHTML += `
-            <tr><td>Full Name</td><td>${data.fullName}</td></tr>
-            <tr><td>Email</td><td>${data.email}</td></tr>
-            <tr><td>Phone</td><td>${data.phone}</td></tr>
-            <tr><td>Gender</td><td>${data.gender}</td></tr>
-            <tr><td>Location</td><td>${data.location}</td></tr>
-            <tr><td>Upline ID</td><td>${data.upline}</td></tr>
-            <tr><td>Current Business Progress</td><td>${data.businessProgress || 'N/A'}</td></tr>
-          `;
-          loadProgressHistory(doc.ref);
-        });
-      });
-  }
+  <h3>Your Progress History</h3>
+  <ul id="progressHistory"></ul>
 
-  function loadProgressHistory(docRef) {
-    docRef.collection("progressHistory").orderBy("timestamp", "desc").get()
-      .then(snapshot => {
-        const historyList = document.getElementById("progressHistory");
-        historyList.innerHTML = "";
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const listItem = document.createElement("li");
-          listItem.textContent = `${data.timestamp.toDate().toLocaleString()} - ${data.progress}`;
-          historyList.appendChild(listItem);
-        });
-      });
-  }
+  <h3>Change Password</h3>
+  <form id="changePasswordForm">
+    <input type="password" id="currentPassword" placeholder="Current Password" required />
+    <input type="password" id="newPassword" placeholder="New Password" required />
+    <input type="password" id="confirmNewPassword" placeholder="Confirm New Password" required />
+    <button type="submit">Change Password</button>
+    <div class="message" id="passwordChangeMessage"></div>
+  </form>
 
-  document.getElementById("progressForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const progress = document.getElementById("businessProgress").value;
-    const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+  <script>
+    var firebaseConfig = {
+      apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
+      authDomain: "lita-platform-bffdc.firebaseapp.com",
+      projectId: "lita-platform-bffdc",
+      storageBucket: "lita-platform-bffdc.appspot.com",
+      messagingSenderId: "387943226211",
+      appId: "1:387943226211:web:0127c409e0f880df391156"
+    };
 
-    memberDocRef.update({ businessProgress: progress }).then(() => {
-      memberDocRef.collection("progressHistory").add({ progress, timestamp }).then(() => {
-        document.getElementById("updateMessage").textContent = "✅ Progress updated successfully!";
-        loadProgressHistory(memberDocRef);
-      });
-    }).catch(err => {
-      document.getElementById("updateMessage").textContent = "❌ Failed to update: " + err.message;
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let memberDocRef;
+
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = "signin.html";
+      } else {
+        loadMemberData(user.email);
+      }
     });
-  });
 
-  document.getElementById("logout").addEventListener("click", () => {
-    firebase.auth().signOut().then(() => window.location.href = "signin.html");
-  });
-</script>
+    function loadMemberData(email) {
+      db.collection("members").where("email", "==", email).get()
+        .then(querySnapshot => {
+          const tbody = document.querySelector("#userDetailsTable tbody");
+          tbody.innerHTML = "";
+          querySnapshot.forEach(doc => {
+            const data = doc.data();
+            memberDocRef = doc.ref;
+            tbody.innerHTML += `
+              <tr><td>Full Name</td><td>${data.fullName}</td></tr>
+              <tr><td>Email</td><td>${data.email}</td></tr>
+              <tr><td>Phone</td><td>${data.phone}</td></tr>
+              <tr><td>Gender</td><td>${data.gender}</td></tr>
+              <tr><td>Location</td><td>${data.location}</td></tr>
+              <tr><td>Upline ID</td><td>${data.upline}</td></tr>
+              <tr><td>Current Business Progress</td><td>${data.businessProgress || 'N/A'}</td></tr>
+            `;
+            loadProgressHistory(doc.ref);
+          });
+        });
+    }
+
+    function loadProgressHistory(docRef) {
+      docRef.collection("progressHistory").orderBy("timestamp", "desc").get()
+        .then(snapshot => {
+          const historyList = document.getElementById("progressHistory");
+          historyList.innerHTML = "";
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const listItem = document.createElement("li");
+            listItem.textContent = `${data.timestamp.toDate().toLocaleString()} - ${data.progress}`;
+            historyList.appendChild(listItem);
+          });
+        });
+    }
+
+    document.getElementById("progressForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const progress = document.getElementById("businessProgress").value;
+      const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+
+      memberDocRef.update({ businessProgress: progress }).then(() => {
+        memberDocRef.collection("progressHistory").add({ progress, timestamp }).then(() => {
+          document.getElementById("updateMessage").textContent = "✅ Progress updated successfully!";
+          loadProgressHistory(memberDocRef);
+        });
+      }).catch(err => {
+        document.getElementById("updateMessage").textContent = "❌ Failed to update: " + err.message;
+      });
+    });
+
+    document.getElementById("logout").addEventListener("click", () => {
+      firebase.auth().signOut().then(() => window.location.href = "signin.html");
+    });
+
+    document.getElementById("changePasswordForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const currentPassword = document.getElementById("currentPassword").value;
+      const newPassword = document.getElementById("newPassword").value;
+      const confirmNewPassword = document.getElementById("confirmNewPassword").value;
+      const messageDiv = document.getElementById("passwordChangeMessage");
+
+      if (newPassword !== confirmNewPassword) {
+        messageDiv.textContent = "❌ New passwords do not match.";
+        return;
+      }
+
+      const user = firebase.auth().currentUser;
+      const credentials = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+
+      user.reauthenticateWithCredential(credentials)
+        .then(() => {
+          user.updatePassword(newPassword)
+            .then(() => {
+              messageDiv.textContent = "✅ Password changed successfully!";
+              document.getElementById("changePasswordForm").reset();
+            })
+            .catch(error => {
+              messageDiv.textContent = "❌ Error updating password: " + error.message;
+            });
+        })
+        .catch(error => {
+          messageDiv.textContent = "❌ Current password incorrect: " + error.message;
+        });
+    });
+  </script>
+</body>
+</html>
