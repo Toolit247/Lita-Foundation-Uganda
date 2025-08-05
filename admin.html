@@ -1,93 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard - LITA Foundation</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="dashboard.js"></script>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <h2>Admin Dashboard</h2>
-  <button id="logout">Logout</button>
-  <h3>Registered Members</h3>
-  <table border="1" id="membersTable">
-    <thead>
-      <tr>
-        <th>Full Name</th>
-        <th>Email</th>
-        <th>Phone</th>
-        <th>Gender</th>
-        <th>Location</th>
-        <th>Upline ID</th>
-        <th>Current Business Progress</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <button id="exportCSV">Export to CSV</button>
-  <script>
-    var firebaseConfig = {
-      apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
-      authDomain: "lita-platform-bffdc.firebaseapp.com",
-      projectId: "lita-platform-bffdc",
-      storageBucket: "lita-platform-bffdc.appspot.com",
-      messagingSenderId: "387943226211",
-      appId: "1:387943226211:web:0127c409e0f880df391156"
-    };
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
+    authDomain: "lita-platform-bffdc.firebaseapp.com",
+    projectId: "lita-platform-bffdc",
+    storageBucket: "lita-platform-bffdc.appspot.com",
+    messagingSenderId: "387943226211",
+    appId: "1:387943226211:web:0127c409e0f880df391156"
+  };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    firebase.auth().onAuthStateChanged(user => {
-      if (!user || user.email !== "toolitambrosehenry@gmail.com") {
-        window.location.href = "signin.html";
-      } else {
-        loadMembers();
-      }
-    });
-
-    function loadMembers() {
-      const tbody = document.querySelector("#membersTable tbody");
-      tbody.innerHTML = "";
-      db.collection("submissions").get().then(querySnapshot => {
-        querySnapshot.forEach(doc => {
-          const data = doc.data();
-          const row = `<tr>
-            <td>${data.fullName}</td>
-            <td>${data.email}</td>
-            <td>${data.phone}</td>
-            <td>${data.gender}</td>
-            <td>${data.location}</td>
-            <td>${data.upline}</td>
-            <td>${data.businessProgress || 'N/A'}</td>
-          </tr>`;
-          tbody.innerHTML += row;
-        });
-      });
+  firebase.auth().onAuthStateChanged(user => {
+    if (!user || user.email !== "toolitambrosehenry@gmail.com") {
+      window.location.href = "signin.html";
+    } else {
+      loadMembers();
     }
+  });
 
-    document.getElementById("exportCSV").addEventListener("click", () => {
-      db.collection("submissions").get().then(querySnapshot => {
-        let csvContent = "data:text/csv;charset=utf-8,Full Name,Email,Phone,Gender,Location,Upline ID,Business Progress\n";
-        querySnapshot.forEach(doc => {
-          const d = doc.data();
-          csvContent += `${d.fullName},${d.email},${d.phone},${d.gender},${d.location},${d.upline},${d.businessProgress || 'N/A'}\n`;
-        });
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "LITA_Members.csv");
-        document.body.appendChild(link);
-        link.click();
+  function loadMembers() {
+    const tbody = document.querySelector("#membersTable tbody");
+    tbody.innerHTML = "";
+    db.collection("members").get().then(querySnapshot => {
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const row = `<tr>
+          <td>${data.fullName}</td>
+          <td>${data.email}</td>
+          <td>${data.phone}</td>
+          <td>${data.gender}</td>
+          <td>${data.location}</td>
+          <td>${data.upline}</td>
+          <td>${data.businessProgress || 'N/A'}</td>
+        </tr>`;
+        tbody.innerHTML += row;
       });
     });
+  }
 
-    document.getElementById("logout").addEventListener("click", () => {
-      firebase.auth().signOut().then(() => window.location.href = "signin.html");
+  document.getElementById("exportCSV").addEventListener("click", () => {
+    db.collection("members").get().then(querySnapshot => {
+      let csvContent = "data:text/csv;charset=utf-8,Full Name,Email,Phone,Gender,Location,Upline ID,Business Progress\n";
+      querySnapshot.forEach(doc => {
+        const d = doc.data();
+        csvContent += `${d.fullName},${d.email},${d.phone},${d.gender},${d.location},${d.upline},${d.businessProgress || 'N/A'}\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "LITA_Members.csv");
+      document.body.appendChild(link);
+      link.click();
     });
-  </script>
-</body>
-</html>
+  });
+
+  document.getElementById("logout").addEventListener("click", () => {
+    firebase.auth().signOut().then(() => window.location.href = "signin.html");
+  });
+</script>
