@@ -12,6 +12,23 @@
   <h2>Admin Dashboard</h2>
   <button id="logout">Logout</button>
 
+  <h3>Register New Member</h3>
+  <form id="addMemberForm">
+    <input type="text" id="newFullName" placeholder="Full Name" required />
+    <input type="email" id="newEmail" placeholder="Email" required />
+    <input type="text" id="newPhone" placeholder="Phone" required />
+    <select id="newGender" required>
+      <option value="">--Select Gender--</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+    </select>
+    <input type="text" id="newLocation" placeholder="Location" required />
+    <input type="text" id="newUpline" placeholder="Upline ID" required />
+    <input type="password" id="newPassword" placeholder="Password" required />
+    <button type="submit">Register Member</button>
+    <div id="addMemberMessage"></div>
+  </form>
+
   <h3>Registered Members</h3>
   <table border="1" id="membersTable">
     <thead>
@@ -76,7 +93,6 @@
     function viewProgressHistory(memberId) {
       const historyWindow = window.open("", "Progress History", "width=600,height=400");
       historyWindow.document.write("<h3>Progress History</h3><ul id='historyList'></ul>");
-
       db.collection("members").doc(memberId).collection("progressHistory").orderBy("timestamp", "desc").get()
         .then(snapshot => {
           const historyList = historyWindow.document.getElementById("historyList");
@@ -88,6 +104,34 @@
           });
         });
     }
+
+    document.getElementById("addMemberForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const fullName = document.getElementById("newFullName").value;
+      const email = document.getElementById("newEmail").value;
+      const phone = document.getElementById("newPhone").value;
+      const gender = document.getElementById("newGender").value;
+      const location = document.getElementById("newLocation").value;
+      const upline = document.getElementById("newUpline").value;
+      const password = document.getElementById("newPassword").value;
+
+      firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then(userCredential => {
+          const uid = userCredential.user.uid;
+          return db.collection("members").doc(uid).set({
+            fullName, email, phone, gender, location, upline, businessProgress: "",
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        })
+        .then(() => {
+          document.getElementById("addMemberMessage").textContent = "✅ Member registered successfully!";
+          document.getElementById("addMemberForm").reset();
+          loadMembers();
+        })
+        .catch(error => {
+          document.getElementById("addMemberMessage").textContent = "❌ " + error.message;
+        });
+    });
 
     document.getElementById("exportCSV").addEventListener("click", () => {
       db.collection("members").get().then(querySnapshot => {
