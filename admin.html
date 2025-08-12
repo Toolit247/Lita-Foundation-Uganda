@@ -2,14 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Dashboard - LITA Foundation Uganda</title>
-  <script type="module">
-    // Firebase imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  <title>Admin Dashboard - Register Members</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
 
-    // Firebase config
+  <h2>Register New Member</h2>
+  <form id="registerForm">
+    <input type="text" id="name" placeholder="Full Name" required><br>
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="password" id="password" placeholder="Temporary Password" required><br>
+    <input type="text" id="memberId" placeholder="Member ID" required><br>
+    <button type="submit">Register Member</button>
+  </form>
+
+  <p id="status"></p>
+
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
       authDomain: "lita-platform-bffdc.firebaseapp.com",
@@ -20,69 +32,36 @@
       measurementId: "G-44JEYP8ZHD"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.getAuth(app);
+    const db = firebase.getFirestore(app);
 
-    const membersList = document.getElementById("membersList");
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const memberId = document.getElementById("memberId").value;
 
-    // Load members
-    async function loadMembers() {
-      const querySnapshot = await getDocs(collection(db, "members"));
-      membersList.innerHTML = "";
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const row = `
-          <tr>
-            <td>${data.name || ''}</td>
-            <td>${data.email || ''}</td>
-            <td>
-              <input type="text" value="${data.memberID || ''}" data-id="${docSnap.id}" class="id-input">
-              <button class="save-btn" data-id="${docSnap.id}">Save</button>
-            </td>
-          </tr>
-        `;
-        membersList.innerHTML += row;
-      });
+      document.getElementById("status").innerText = "Registering...";
 
-      document.querySelectorAll(".save-btn").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          const memberId = e.target.getAttribute("data-id");
-          const newID = document.querySelector(`input[data-id="${memberId}"]`).value.trim();
-          if (newID) {
-            await updateDoc(doc(db, "members", memberId), { memberID: newID });
-            alert("Member ID updated!");
-          }
+      try {
+        const userCredential = await firebase.createUserWithEmailAndPassword(auth, email, password);
+        const userId = userCredential.user.uid;
+
+        await firebase.setDoc(firebase.doc(db, "members", userId), {
+          name,
+          email,
+          memberId,
+          progress: []
         });
-      });
-    }
 
-    // Auth check
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "index.html";
-      } else {
-        loadMembers();
+        document.getElementById("status").innerText = "✅ Member registered successfully!";
+        document.getElementById("registerForm").reset();
+      } catch (error) {
+        document.getElementById("status").innerText = "❌ " + error.message;
       }
     });
-
-    document.getElementById("logout").addEventListener("click", () => signOut(auth));
-
   </script>
-</head>
-<body>
-  <h1>Admin Dashboard</h1>
-  <button id="logout">Logout</button>
-
-  <table border="1">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Member ID</th>
-      </tr>
-    </thead>
-    <tbody id="membersList"></tbody>
-  </table>
 </body>
 </html>
