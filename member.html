@@ -2,12 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Member Dashboard - LITA Foundation Uganda</title>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  <title>Member Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+</head>
+<body>
+  <h1>Member Dashboard</h1>
+  <p id="welcome"></p>
 
+  <h2>Your Progress History</h2>
+  <ul id="progressList"></ul>
+
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
       authDomain: "lita-platform-bffdc.firebaseapp.com",
@@ -18,38 +25,29 @@
       measurementId: "G-44JEYP8ZHD"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.getAuth(app);
+    const db = firebase.getFirestore(app);
 
-    async function loadMemberInfo(uid) {
-      const docRef = doc(db, "members", uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        document.getElementById("memberName").textContent = data.name || "N/A";
-        document.getElementById("memberEmail").textContent = data.email || "N/A";
-        document.getElementById("memberID").textContent = data.memberID || "Not Assigned";
-      }
-    }
+    firebase.onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const docSnap = await firebase.getDoc(firebase.doc(db, "members", user.uid));
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          document.getElementById("welcome").innerText = `Welcome, ${data.name} (ID: ${data.memberId})`;
 
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "index.html";
+          const progressList = document.getElementById("progressList");
+          progressList.innerHTML = "";
+          (data.progress || []).forEach((p) => {
+            const li = document.createElement("li");
+            li.textContent = p;
+            progressList.appendChild(li);
+          });
+        }
       } else {
-        loadMemberInfo(user.uid);
+        window.location.href = "login.html";
       }
     });
-
-    document.getElementById("logout").addEventListener("click", () => signOut(auth));
-
   </script>
-</head>
-<body>
-  <h1>Member Dashboard</h1>
-  <button id="logout">Logout</button>
-  <p><strong>Name:</strong> <span id="memberName"></span></p>
-  <p><strong>Email:</strong> <span id="memberEmail"></span></p>
-  <p><strong>Member ID:</strong> <span id="memberID"></span></p>
 </body>
 </html>
