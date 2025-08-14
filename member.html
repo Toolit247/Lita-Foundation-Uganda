@@ -1,106 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Member Dashboard - LITA Foundation</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <title>Member Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js"></script>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    .profile { margin-bottom: 20px; }
+    img { max-width: 120px; border-radius: 10px; }
+  </style>
 </head>
 <body>
   <h2>Member Dashboard</h2>
-  <button id="logout">Logout</button>
-
-  <h3>Your Details</h3>
-  <table border="1" id="userDetailsTable">
-    <tbody></tbody>
-  </table>
-
-  <h3>Update Business Progress</h3>
-  <form id="progressForm">
-    <input type="text" id="businessProgress" placeholder="Enter your progress" required />
-    <button type="submit">Update Progress</button>
-    <div id="updateMessage"></div>
-  </form>
-
-  <h3>Progress History</h3>
-  <ul id="progressHistory"></ul>
+  <div class="profile">
+    <img id="memberPhoto" src="" alt="Member Photo"><br>
+    <strong>ID:</strong> <span id="memberId"></span><br>
+    <strong>Name:</strong> <span id="memberName"></span><br>
+    <strong>Email:</strong> <span id="memberEmail"></span><br>
+    <strong>Phone:</strong> <span id="memberPhone"></span>
+  </div>
 
   <script>
-    var firebaseConfig = {
+    const firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
       authDomain: "lita-platform-bffdc.firebaseapp.com",
       projectId: "lita-platform-bffdc",
       storageBucket: "lita-platform-bffdc.appspot.com",
       messagingSenderId: "387943226211",
-      appId: "1:387943226211:web:0127c409e0f880df391156"
+      appId: "1:387943226211:web:0127c409e0f880df391156",
+      measurementId: "G-44JEYP8ZHD"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
-    let memberDocRef;
 
-    firebase.auth().onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        window.location.href = "signin.html";
-      } else {
-        loadMemberData(user.uid);
+        window.location.href = "index.html";
+        return;
       }
-    });
 
-    function loadMemberData(uid) {
-      db.collection("members").doc(uid).get().then(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          memberDocRef = doc.ref;
-          const tbody = document.querySelector("#userDetailsTable tbody");
-          tbody.innerHTML = `
-            <tr><td>Full Name</td><td>${data.fullName}</td></tr>
-            <tr><td>Email</td><td>${data.email}</td></tr>
-            <tr><td>Phone</td><td>${data.phone}</td></tr>
-            <tr><td>Gender</td><td>${data.gender}</td></tr>
-            <tr><td>Location</td><td>${data.location}</td></tr>
-            <tr><td>Upline ID</td><td>${data.upline}</td></tr>
-            <tr><td>Current Business Progress</td><td>${data.businessProgress || 'N/A'}</td></tr>
-          `;
-          loadProgressHistory();
-        }
-      });
-    }
-
-    function loadProgressHistory() {
-      memberDocRef.collection("progressHistory").orderBy("timestamp", "desc").get()
-        .then(snapshot => {
-          const historyList = document.getElementById("progressHistory");
-          historyList.innerHTML = "";
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const listItem = document.createElement("li");
-            listItem.textContent = `${data.timestamp.toDate().toLocaleString()} - ${data.progress}`;
-            historyList.appendChild(listItem);
-          });
-        });
-    }
-
-    document.getElementById("progressForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-      const progress = document.getElementById("businessProgress").value;
-      const timestamp = firebase.firestore.FieldValue.serverTimestamp();
-
-      memberDocRef.update({ businessProgress: progress }).then(() => {
-        memberDocRef.collection("progressHistory").add({ progress, timestamp }).then(() => {
-          document.getElementById("updateMessage").textContent = "✅ Progress updated successfully!";
-          document.getElementById("progressForm").reset();
-          loadProgressHistory();
-        });
-      }).catch(err => {
-        document.getElementById("updateMessage").textContent = "❌ Failed to update: " + err.message;
-      });
-    });
-
-    document.getElementById("logout").addEventListener("click", () => {
-      firebase.auth().signOut().then(() => window.location.href = "signin.html");
+      const memberSnap = await db.collection("members").where("email", "==", user.email).get();
+      if (!memberSnap.empty) {
+        const memberData = memberSnap.docs[0].data();
+        document.getElementById("memberId").innerText = memberData.memberId || "";
+        document.getElementById("memberName").innerText = memberData.name || "";
+        document.getElementById("memberEmail").innerText = memberData.email || "";
+        document.getElementById("memberPhone").innerText = memberData.phone || "";
+        document.getElementById("memberPhoto").src = memberData.photoURL || "default-photo.png";
+      }
     });
   </script>
 </body>
+</html>
