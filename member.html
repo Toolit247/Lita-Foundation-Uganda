@@ -2,169 +2,171 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Member Dashboard - LITA</title>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#10b981" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("service-worker.js").catch(console.error);
-      });
-    }
-  </script>
+  <title>Member Dashboard - LITA Foundation</title>
+  <link rel="stylesheet" href="style.css" />
   <style>
-    .pwa-install {
-      display:none;
-      position: fixed; left: 0; right: 0; bottom: 16px; margin: auto;
-      width: 95%; max-width: 520px; background: #10b981; color: #fff;
-      border-radius: 12px; padding: 12px 16px; box-shadow: 0 10px 25px rgba(0,0,0,.15);
-    }
+    .dashboard { max-width: 800px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 8px; border-bottom: 1px solid #eee; }
+    .avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; background: #f2f2f2; display: block; margin-bottom: 10px; }
+    .photo-box { display:flex; align-items:center; gap:16px; }
+    .history { list-style: none; padding-left: 0; }
+    .history li { padding: 8px 0; border-bottom: 1px solid #eee; }
   </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
-  <header class="sticky top-0 z-10 bg-white shadow">
-    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-      <h1 class="text-lg sm:text-2xl font-bold text-slate-800">LITA – Member Dashboard</h1>
-      <div class="flex items-center gap-2">
-        <button id="installBtn" class="hidden sm:inline-flex px-3 py-2 rounded-lg bg-emerald-600 text-white">Install App</button>
-        <button id="logoutBtn" class="px-3 py-2 rounded-lg bg-rose-600 text-white">Logout</button>
+<body>
+  <div class="dashboard">
+    <h2>Member Dashboard</h2>
+    <button class="logout-btn" id="logout">Logout</button>
+
+    <h3>Your Details</h3>
+    <div class="photo-box">
+      <img id="profilePreview" class="avatar" alt="Profile Photo" />
+      <div>
+        <input type="file" id="profileFile" accept="image/*" />
+        <button id="savePhoto">Save Photo</button>
+        <div id="photoMsg"></div>
       </div>
     </div>
-  </header>
 
-  <main class="max-w-3xl mx-auto px-4 py-6">
-    <!-- Profile -->
-    <section id="profile" class="bg-white rounded-2xl p-5 shadow mb-6">
-      <div class="animate-pulse text-slate-400">Loading profile…</div>
-    </section>
+    <table id="userDetailsTable">
+      <tbody></tbody>
+    </table>
 
-    <!-- Update Photo -->
-    <section class="bg-white rounded-2xl p-5 shadow">
-      <h2 class="text-lg font-semibold mb-4">Update Profile Photo</h2>
-      <form id="photoForm" class="grid gap-4">
-        <input type="url" name="photoURL" placeholder="Paste your photo URL (https://…)" required class="p-3 border rounded-xl">
-        <button class="px-5 py-3 bg-emerald-600 text-white rounded-xl">Update Photo</button>
-      </form>
-      <p id="photoMsg" class="mt-3 text-sm"></p>
-      <p id="offlineNote" class="mt-4 text-amber-600 text-sm hidden">You are offline — your updates will sync when online.</p>
-    </section>
-  </main>
+    <h3>Update Business Progress</h3>
+    <form id="progressForm">
+      <input type="text" id="businessProgress" placeholder="Enter your progress" required />
+      <button type="submit">Update Progress</button>
+      <div id="updateMessage"></div>
+    </form>
 
-  <!-- Small-screen Install CTA -->
-  <div class="pwa-install" id="pwaInstallBar">
-    <div class="flex items-center justify-between gap-3">
-      <span class="font-medium">Install LITA BAKERY for quicker access</span>
-      <div class="flex items-center gap-2">
-        <button id="installInline" class="px-3 py-2 bg-white text-emerald-700 rounded-lg">Install</button>
-        <button id="dismissInstall" class="px-3 py-2 bg-emerald-800 text-white rounded-lg">Later</button>
-      </div>
-    </div>
+    <h3>Progress History</h3>
+    <ul id="progressHistory" class="history"></ul>
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collection, query, where, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, orderBy, getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
       authDomain: "lita-platform-bffdc.firebaseapp.com",
       projectId: "lita-platform-bffdc",
-      storageBucket: "lita-platform-bffdc.firebasestorage.app",
+      storageBucket: "lita-platform-bffdc.appspot.com",
       messagingSenderId: "387943226211",
-      appId: "1:387943226211:web:0127c409e0f880df391156",
-      measurementId: "G-44JEYP8ZHD"
+      appId: "1:387943226211:web:0127c409e0f880df391156"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const profile = document.getElementById("profile");
-    const photoForm = document.getElementById("photoForm");
-    const photoMsg = document.getElementById("photoMsg");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const offlineNote = document.getElementById("offlineNote");
-
-    let memberDocId = null;
+    let memberDocRef = null;
+    let currentUid = null;
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = "signin.html";
         return;
       }
-      try {
-        const q = query(collection(db, "members"), where("email", "==", user.email));
-        const snap = await getDocs(q);
-        if (snap.empty) {
-          profile.innerHTML = "<p class='text-rose-700'>❌ No member record found. Contact admin.</p>";
-          return;
-        }
-        const docSnap = snap.docs[0];
-        memberDocId = docSnap.id;
-        const data = docSnap.data();
-        profile.innerHTML = `
-          <div class="flex items-center gap-4">
-            <img src="${data.photoURL || 'https://via.placeholder.com/120'}" class="w-24 h-24 rounded-full object-cover" alt="">
-            <div>
-              <p class="text-xl font-bold">${data.name || '-'}</p>
-              <p class="text-slate-600">${data.email || '-'}</p>
-              <p class="mt-1">Member ID: <span class="font-semibold">${data.idNumber || '-'}</span></p>
-            </div>
-          </div>`;
-      } catch (e) {
-        offlineNote.classList.remove("hidden");
-      }
+      currentUid = user.uid;
+      memberDocRef = doc(db, "members", currentUid);
+      await loadMemberData();
+      await loadProgressHistory();
     });
 
-    photoForm.addEventListener("submit", async (e) => {
+    async function loadMemberData() {
+      const m = await getDoc(memberDocRef);
+      if (!m.exists()) return;
+      const data = m.data();
+
+      // profile photo
+      const preview = document.getElementById("profilePreview");
+      preview.src = data.profilePhoto || "";
+      preview.style.display = data.profilePhoto ? "block" : "none";
+
+      const tbody = document.querySelector("#userDetailsTable tbody");
+      tbody.innerHTML = `
+        <tr><td>Member ID</td><td>${data.memberId || ""}</td></tr>
+        <tr><td>Full Name</td><td>${data.fullName || ""}</td></tr>
+        <tr><td>Email</td><td>${data.email || ""}</td></tr>
+        <tr><td>Phone</td><td>${data.phone || ""}</td></tr>
+        <tr><td>Gender</td><td>${data.gender || ""}</td></tr>
+        <tr><td>Location</td><td>${data.location || ""}</td></tr>
+        <tr><td>Upline ID</td><td>${data.upline || ""}</td></tr>
+        <tr><td>Current Business Progress</td><td>${data.businessProgress || "N/A"}</td></tr>
+      `;
+    }
+
+    async function loadProgressHistory() {
+      const histQ = query(collection(db, "members", currentUid, "progressHistory"), orderBy("timestamp", "desc"));
+      const snap = await getDocs(histQ);
+      const list = document.getElementById("progressHistory");
+      list.innerHTML = "";
+      snap.forEach((d) => {
+        const p = d.data();
+        const when = p.timestamp?.toDate().toLocaleString() || "(no time)";
+        const li = document.createElement("li");
+        li.textContent = `${when} — ${p.progress}`;
+        list.appendChild(li);
+      });
+    }
+
+    // Save progress
+    document.getElementById("progressForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      if (!memberDocId) return;
-      const url = new FormData(photoForm).get("photoURL");
+      const progress = document.getElementById("businessProgress").value.trim();
+      const msg = document.getElementById("updateMessage");
+      msg.textContent = "";
+
       try {
-        await updateDoc(doc(db, "members", memberDocId), { photoURL: url });
-        photoMsg.textContent = "✅ Photo updated!";
-        photoMsg.className = "mt-3 text-sm text-emerald-700";
-        setTimeout(() => window.location.reload(), 500);
+        await updateDoc(memberDocRef, { businessProgress: progress });
+        await addDoc(collection(db, "members", currentUid, "progressHistory"), {
+          progress,
+          timestamp: serverTimestamp()
+        });
+        msg.textContent = "✅ Progress updated successfully!";
+        e.target.reset();
+        await loadMemberData();
+        await loadProgressHistory();
       } catch (err) {
-        photoMsg.textContent = "❌ " + err.message;
-        photoMsg.className = "mt-3 text-sm text-rose-700";
+        msg.textContent = "❌ " + err.message;
       }
     });
 
-    logoutBtn.addEventListener("click", async () => {
-      await signOut(auth);
-      window.location.href = "signin.html";
+    // Profile photo: store as Base64 in Firestore
+    const toDataURL = (file) =>
+      new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+
+    document.getElementById("savePhoto").addEventListener("click", async () => {
+      const fileInput = document.getElementById("profileFile");
+      const msg = document.getElementById("photoMsg");
+      msg.textContent = "";
+      if (!fileInput.files || !fileInput.files[0]) {
+        msg.textContent = "❌ Please choose an image first.";
+        return;
+      }
+      try {
+        const dataUrl = await toDataURL(fileInput.files[0]);
+        await updateDoc(memberDocRef, { profilePhoto: dataUrl });
+        msg.textContent = "✅ Photo saved!";
+        document.getElementById("profilePreview").src = dataUrl;
+        document.getElementById("profilePreview").style.display = "block";
+        fileInput.value = "";
+      } catch (err) {
+        msg.textContent = "❌ " + err.message;
+      }
     });
 
-    // PWA install logic
-    let deferredPrompt;
-    const installBtn = document.getElementById("installBtn");
-    const bar = document.getElementById("pwaInstallBar");
-    const installInline = document.getElementById("installInline");
-    const dismissInstall = document.getElementById("dismissInstall");
-
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.classList.remove("hidden");
-      bar.style.display = "block";
-    });
-
-    const triggerInstall = async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      installBtn.classList.add("hidden");
-      bar.style.display = "none";
-    };
-
-    installBtn.addEventListener("click", triggerInstall);
-    installInline.addEventListener("click", triggerInstall);
-    dismissInstall.addEventListener("click", () => (bar.style.display = "none"));
+    document.getElementById("logout").addEventListener("click", () => signOut(auth).then(() => (window.location.href = "signin.html")));
   </script>
 </body>
 </html>
