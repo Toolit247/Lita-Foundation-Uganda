@@ -1,140 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Admin Dashboard - LITA Foundation</title>
-  <!-- Firebase v8 -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
   <style>
-    :root {
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --text:#1f2937;
-      --muted:#6b7280;
-      --brand:#2563eb;
-      --brand2:#1d4ed8;
-      --success:#16a34a;
-      --danger:#dc2626;
-      --border:#e5e7eb;
-      --chip:#eef2ff;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;color:var(--text)}
-    header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--card);box-shadow:0 2px 8px rgba(0,0,0,.04);position:sticky;top:0;z-index:10}
-    .title{font-weight:700;letter-spacing:.2px}
-    .btn{background:var(--brand);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;transition:.2s}
-    .btn:hover{background:var(--brand2)}
-    .btn.secondary{background:#eef2f7;color:#111}
-    .btn.link{background:transparent;color:var(--brand);padding:0}
-    .container{max-width:1100px;margin:22px auto;padding:0 16px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.04);padding:18px}
-    .grid{display:grid;gap:16px}
-    @media(min-width:900px){.grid-2{grid-template-columns:1.1fr 1fr}}
-    h3{margin:0 0 12px 0}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;outline:none}
-    input:focus,select:focus{border-color:var(--brand)}
-    .muted{color:var(--muted);font-size:13px}
-    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:#fff}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:14px}
-    th{background:#fafafa;font-weight:700}
-    .actions button{margin-right:6px}
-    .pill{background:var(--chip);color:var(--brand2);padding:2px 8px;border-radius:999px;font-size:12px}
-    .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
-    .search{flex:1;min-width:220px;position:relative}
-    .search input{padding-left:36px}
-    .search-icon{position:absolute;top:50%;left:10px;transform:translateY(-50%);font-size:14px;color:var(--muted)}
-    .msg{margin-top:8px;font-weight:600}
-    .msg.ok{color:var(--success)}
-    .msg.err{color:var(--danger)}
-    .tiny{font-size:12px;color:var(--muted)}
+    .admin-wrap { max-width: 1000px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+    th { background: #f7f7f7; }
+    .row-actions button { margin-right: 6px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .full { grid-column: 1/-1; }
   </style>
 </head>
 <body>
-  <header>
-    <div class="title">LITA • Admin Dashboard</div>
-    <button id="logout" class="btn">Logout</button>
-  </header>
+  <div class="admin-wrap">
+    <h2>Admin Dashboard</h2>
+    <button class="logout-btn" id="logout">Logout</button>
 
-  <div class="container grid grid-2">
-    <!-- Left: Register member -->
-    <section class="card">
-      <h3>Register New Member</h3>
-      <p class="tiny">Admin-only. This uses a <span class="pill">secondary Firebase app</span> so your admin session stays logged in.</p>
-      <form id="addMemberForm" class="grid">
-        <div class="row" style="gap:12px">
-          <input type="text" id="newFullName" placeholder="Full Name" required />
-          <input type="email" id="newEmail" placeholder="Email" required />
-        </div>
-        <div class="row" style="gap:12px">
-          <input type="text" id="newPhone" placeholder="Phone" required />
-          <select id="newGender" required>
-            <option value="">--Select Gender--</option>
-            <option>Male</option><option>Female</option>
-          </select>
-        </div>
-        <div class="row" style="gap:12px">
-          <input type="text" id="newLocation" placeholder="Location" required />
-          <input type="text" id="newUpline" placeholder="Upline ID" required />
-        </div>
-        <div class="row" style="gap:12px">
-          <input type="text" id="newMemberId" placeholder="Member ID (manual)" required />
-          <input type="password" id="newPassword" placeholder="Temporary Password" required />
-        </div>
-        <div class="row" style="justify-content:flex-end">
-          <button type="submit" class="btn">Register Member</button>
-        </div>
-        <div id="addMemberMessage" class="msg"></div>
-      </form>
-    </section>
+    <h3>Register New Member</h3>
+    <form id="addMemberForm" class="two-col">
+      <input type="text" id="newFullName" placeholder="Full Name" required />
+      <input type="email" id="newEmail" placeholder="Email" required />
+      <input type="text" id="newPhone" placeholder="Phone" required />
+      <select id="newGender" required>
+        <option value="">--Select Gender--</option>
+        <option>Male</option>
+        <option>Female</option>
+      </select>
+      <input type="text" id="newLocation" placeholder="Location" required />
+      <input type="text" id="newUpline" placeholder="Upline ID" required />
+      <input type="text" id="newMemberId" placeholder="Member ID (manual)" required />
+      <input type="password" id="newPassword" placeholder="Temp Password" required />
+      <button type="submit" class="full">Register Member</button>
+      <div id="addMemberMessage" class="full"></div>
+    </form>
 
-    <!-- Right: Tools -->
-    <section class="card">
-      <h3>Tools</h3>
-      <div class="toolbar">
-        <div class="search">
-          <span class="search-icon">🔎</span>
-          <input type="text" id="searchInput" placeholder="Search members by name, email, phone, location, Member ID…" />
-        </div>
-        <button id="exportCSV" class="btn secondary">Export CSV</button>
-      </div>
-      <p class="tiny">Click “Edit ID” in the table to update an existing Member ID.</p>
-    </section>
+    <h3>Registered Members</h3>
+    <table id="membersTable">
+      <thead>
+        <tr>
+          <th>Member ID</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Gender</th>
+          <th>Location</th>
+          <th>Upline</th>
+          <th>Progress</th>
+          <th>History</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-    <!-- Full width: Members table -->
-    <section class="card" style="grid-column:1/-1">
-      <h3>Registered Members</h3>
-      <div class="table-wrap">
-        <table id="membersTable">
-          <thead>
-            <tr>
-              <th>Photo</th>
-              <th>Full Name</th>
-              <th>Email</th>
-              <th>Member ID</th>
-              <th>Phone</th>
-              <th>Gender</th>
-              <th>Location</th>
-              <th>Upline ID</th>
-              <th>Current Progress</th>
-              <th>History</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
+    <button id="exportCSV">Export to CSV</button>
   </div>
 
-  <script>
-    // Firebase Config
-    var firebaseConfig = {
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, getDocs, addDoc, setDoc, doc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
       authDomain: "lita-platform-bffdc.firebaseapp.com",
       projectId: "lita-platform-bffdc",
@@ -143,109 +72,70 @@
       appId: "1:387943226211:web:0127c409e0f880df391156"
     };
 
-    // Primary app (admin session)
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    // Main app (admin session)
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const ADMIN_EMAIL = "toolitambrosehenry@gmail.com";
 
-    // Secondary app for creating users (won't replace admin session)
-    const secondary = firebase.apps.length < 2
-      ? firebase.initializeApp(firebaseConfig, "secondary")
-      : firebase.app("secondary");
+    // Secondary app to create users without logging out admin
+    const secondaryApp = initializeApp(firebaseConfig, "Secondary");
+    const secondaryAuth = getAuth(secondaryApp);
 
-    // Guard route
-    firebase.auth().onAuthStateChanged(user => {
-      if (!user || user.email !== "toolitambrosehenry@gmail.com") {
+    onAuthStateChanged(auth, (user) => {
+      if (!user || user.email !== ADMIN_EMAIL) {
         window.location.href = "signin.html";
       } else {
         loadMembers();
       }
     });
 
-    // Load members (live)
-    let unsubscribeMembers = null;
-    function loadMembers() {
-      if (unsubscribeMembers) unsubscribeMembers();
-      unsubscribeMembers = db.collection("members")
-        .orderBy("createdAt","desc")
-        .onSnapshot(snap => renderTable(snap.docs));
-    }
-
-    function renderTable(docs) {
+    async function loadMembers() {
       const tbody = document.querySelector("#membersTable tbody");
-      const q = (document.getElementById('searchInput').value || '').toLowerCase();
       tbody.innerHTML = "";
-      docs.forEach(doc => {
-        const d = doc.data();
-        const hay = [
-          d.fullName, d.email, d.phone, d.gender, d.location, d.upline, d.memberId
-        ].map(x => (x||'').toString().toLowerCase()).join(" ");
-
-        if (q && !hay.includes(q)) return;
-
+      const snap = await getDocs(collection(db, "members"));
+      snap.forEach((d) => {
+        const data = d.data();
         const tr = document.createElement("tr");
-        const imgSrc = d.photoURL || "https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(d.fullName||'LITA');
-
         tr.innerHTML = `
-          <td><img src="${imgSrc}" alt="photo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid #e5e7eb"/></td>
-          <td>${d.fullName || ""}</td>
-          <td>${d.email || ""}</td>
-          <td><span class="pill">${d.memberId || "—"}</span></td>
-          <td>${d.phone || ""}</td>
-          <td>${d.gender || ""}</td>
-          <td>${d.location || ""}</td>
-          <td>${d.upline || ""}</td>
-          <td>${d.businessProgress || "N/A"}</td>
-          <td><button class="btn link" data-view="${doc.id}">View</button></td>
-          <td class="actions">
-            <button class="btn link" data-edit="${doc.id}">Edit ID</button>
-          </td>
+          <td>${data.memberId || ""}</td>
+          <td>${data.fullName || ""}</td>
+          <td>${data.email || ""}</td>
+          <td>${data.phone || ""}</td>
+          <td>${data.gender || ""}</td>
+          <td>${data.location || ""}</td>
+          <td>${data.upline || ""}</td>
+          <td>${data.businessProgress || "N/A"}</td>
+          <td><button data-id="${d.id}" class="view-history">View</button></td>
         `;
         tbody.appendChild(tr);
       });
+
+      // bind history buttons
+      document.querySelectorAll(".view-history").forEach(btn => {
+        btn.addEventListener("click", () => viewProgressHistory(btn.getAttribute("data-id")));
+      });
     }
 
-    document.getElementById("searchInput").addEventListener("input", () => loadMembers());
+    async function viewProgressHistory(memberUid) {
+      const w = window.open("", "Progress History", "width=640,height=540");
+      w.document.write("<h3>Progress History</h3><ul id='historyList' style='font-family: sans-serif;'></ul>");
 
-    // View progress history
-    document.querySelector("#membersTable").addEventListener("click", (e) => {
-      const viewId = e.target.getAttribute("data-view");
-      const editId = e.target.getAttribute("data-edit");
-      if (viewId) viewProgressHistory(viewId);
-      if (editId) editMemberId(editId);
-    });
+      const histQ = query(collection(db, "members", memberUid, "progressHistory"), orderBy("timestamp", "desc"));
+      const snap = await getDocs(histQ);
 
-    function viewProgressHistory(memberId) {
-      const w = window.open("", "Progress History", "width=700,height=520");
-      w.document.write("<h3 style='font-family:Arial'>Progress History</h3><ul id='historyList' style='font-family:Arial'></ul>");
-      db.collection("members").doc(memberId).collection("progressHistory").orderBy("timestamp", "desc").get()
-        .then(snapshot => {
-          const list = w.document.getElementById("historyList");
-          snapshot.forEach(doc => {
-            const d = doc.data();
-            const li = w.document.createElement("li");
-            const time = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
-            li.textContent = `${time} — ${d.progress}`;
-            list.appendChild(li);
-          });
-        });
+      const ul = w.document.getElementById("historyList");
+      snap.forEach((d) => {
+        const item = d.data();
+        const li = w.document.createElement("li");
+        const when = item.timestamp?.toDate().toLocaleString() || "(no time)";
+        li.textContent = `${when} — ${item.progress}`;
+        ul.appendChild(li);
+      });
     }
 
-    // Edit Member ID
-    function editMemberId(memberIdDoc) {
-      const newId = prompt("Enter Member ID:");
-      if (!newId) return;
-      db.collection("members").doc(memberIdDoc).update({ memberId: newId })
-        .then(()=> alert("Member ID updated"))
-        .catch(err => alert("Failed: " + err.message));
-    }
-
-    // Register member (secondary app)
     document.getElementById("addMemberForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const msg = document.getElementById("addMemberMessage");
-      msg.textContent = "";
-      msg.className = "msg";
-
       const fullName = document.getElementById("newFullName").value.trim();
       const email = document.getElementById("newEmail").value.trim();
       const phone = document.getElementById("newPhone").value.trim();
@@ -254,51 +144,59 @@
       const upline = document.getElementById("newUpline").value.trim();
       const memberId = document.getElementById("newMemberId").value.trim();
       const password = document.getElementById("newPassword").value;
+      const msg = document.getElementById("addMemberMessage");
+      msg.textContent = "";
 
       try {
-        const cred = await secondary.auth().createUserWithEmailAndPassword(email, password);
+        // Create user with secondary auth (won't switch admin session)
+        const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
         const uid = cred.user.uid;
 
-        await db.collection("members").doc(uid).set({
-          fullName, email, phone, gender, location, upline, memberId,
+        // Create member doc with manual memberId & empty photo
+        await setDoc(doc(db, "members", uid), {
+          memberId,
+          fullName,
+          email,
+          phone,
+          gender,
+          location,
+          upline,
           businessProgress: "",
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          profilePhoto: "", // base64 slot for member upload later
+          createdAt: serverTimestamp()
         });
 
-        // optional: send password reset
-        try { await secondary.auth().sendPasswordResetEmail(email); } catch(_) {}
-
-        await secondary.auth().signOut();
-
-        (e.target).reset();
         msg.textContent = "✅ Member registered successfully!";
-        msg.classList.add("ok");
+        e.target.reset();
+
+        // Sign out secondary session to keep it clean
+        // (doesn't affect main admin session)
+        await secondaryAuth.signOut();
+
+        loadMembers();
       } catch (err) {
         msg.textContent = "❌ " + err.message;
-        msg.classList.add("err");
       }
     });
 
-    // Export CSV
     document.getElementById("exportCSV").addEventListener("click", async () => {
-      const qs = await db.collection("members").get();
-      let csv = "Full Name,Email,Member ID,Phone,Gender,Location,Upline ID,Business Progress\n";
-      qs.forEach(doc => {
-        const d = doc.data();
-        const row = [
-          d.fullName||"", d.email||"", d.memberId||"", d.phone||"", d.gender||"",
-          d.location||"", d.upline||"", (d.businessProgress||"N/A").toString().replace(/[\n\r]+/g," ")
-        ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
-        csv += row + "\n";
+      const snap = await getDocs(collection(db, "members"));
+      let csv = "Member ID,Full Name,Email,Phone,Gender,Location,Upline ID,Business Progress\n";
+      snap.forEach((d) => {
+        const m = d.data();
+        csv += `"${m.memberId || ""}","${m.fullName || ""}","${m.email || ""}","${m.phone || ""}","${m.gender || ""}","${m.location || ""}","${m.upline || ""}","${m.businessProgress || ""}"\n`;
       });
-      const uri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = uri; a.download = "LITA_Members.csv"; document.body.appendChild(a); a.click(); a.remove();
+      a.href = url;
+      a.download = "LITA_Members.csv";
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
     });
 
-    document.getElementById("logout").addEventListener("click", () => {
-      firebase.auth().signOut().then(() => window.location.href = "signin.html");
-    });
+    document.getElementById("logout").addEventListener("click", () => signOut(auth).then(() => (window.location.href = "signin.html")));
   </script>
 </body>
 </html>
