@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+ <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard - LITA Foundation</title>
   <!-- Firebase v8 -->
@@ -55,11 +55,26 @@
     .tiny{font-size:12px;color:var(--muted)}
   </style>
 </head>
-<body>
-  <header>
+ <header>
     <div class="title">LITA • Admin Dashboard</div>
     <button id="logout" class="btn">Logout</button>
   </header>
+<body class="bg-gray-100 p-6">
+  <h1 class="text-2xl font-bold mb-4">Admin Dashboard - LITA Foundation Uganda</h1>
+
+  <!-- Member Registration Form -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold mb-2">Register New Member</h2>
+    <form id="registerForm" class="space-y-2">
+      <input type="text" id="idNumber" placeholder="ID Number" class="w-full border p-2 rounded" required>
+      <input type="text" id="name" placeholder="Full Name" class="w-full border p-2 rounded" required>
+      <input type="email" id="email" placeholder="Email" class="w-full border p-2 rounded" required>
+      <input type="text" id="uplineId" placeholder="Upline ID (ROOT if none)" class="w-full border p-2 rounded">
+      <input type="file" id="photo" class="w-full border p-2 rounded" accept="image/*">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Register</button>
+    </form>
+  </div>
+ 
 
   <div class="container grid grid-2">
     <!-- Left: Register member -->
@@ -78,6 +93,23 @@
             <option>Male</option><option>Female</option>
           </select>
         </div>
+emailjs.init("hZgalRaZwSRy1Zgp4");
+ // Your EmailJS Public Key document.getElementById("registrationForm").
+addEventListener("submit", function(e) { e.preventDefault();
+ const form = e.target; const data = new FormData(form);
+ const url = "https://script.google.com/macros/s/AKfycbyziV-dkWoEkk14BYzqzXH0QS2EglwRx4LHLZFbo4tLupyghkaO_4a017OiWHmWs6Uy-w/exec";
+ fetch(url, { method: "POST", body: data }) 
+.then(response => response.text()) 
+.then(result => { if (result === "Success") { sendEmailConfirmation(data);
+ document.getElementById("message").textContent = "✅ Registration successful! A confirmation email has been sent."; 
+form.reset(); } else { document.getElementById("message").textContent = "❌ Registration failed. Please try again."; } }) 
+.catch(error => { document.getElementById("message").textContent = "❌ Error: " + error.message; }); });
+ function sendEmailConfirmation(data) { const fullName = data.get("Full Name"); const email = data.get("Email"); const phone = data.get("Phone");
+ const location = data.get("Location"); 
+const upline = data.get("Upline ID"); 
+emailjs.send("service_mrqs34o", "template_svacje4", 
+{ full_name: fullName, to_email: email, phone: phone, location: location, upline: upline }).then(() => 
+{ console.log("✅ Email sent."); }).catch(error => { console.error("❌ Failed to send email:", error); }); } </script> </body> </html>"
         <div class="row" style="gap:12px">
           <input type="text" id="newLocation" placeholder="Location" required />
           <input type="text" id="newUpline" placeholder="Upline ID" required />
@@ -132,9 +164,17 @@
     </section>
   </div>
 
+
+
+  <!-- Tree Diagram -->
+  <div class="bg-white p-4 rounded shadow">
+    <h2 class="text-xl font-semibold mb-2">Member Tree</h2>
+    <ul id="treeView"></ul>
+  </div>
+
   <script>
-    // Firebase Config
-    var firebaseConfig = {
+    // Firebase config
+    const firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
       authDomain: "lita-platform-bffdc.firebaseapp.com",
       projectId: "lita-platform-bffdc",
@@ -142,8 +182,7 @@
       messagingSenderId: "387943226211",
       appId: "1:387943226211:web:0127c409e0f880df391156"
     };
-
-    // Primary app (admin session)
+ // Primary app (admin session)
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -299,6 +338,87 @@
     document.getElementById("logout").addEventListener("click", () => {
       firebase.auth().signOut().then(() => window.location.href = "signin.html");
     });
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // Register Member
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const idNumber = document.getElementById("idNumber").value;
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const uplineId = document.getElementById("uplineId").value || "ROOT";
+      const file = document.getElementById("photo").files[0];
+
+      let photoUrl = "";
+      if (file) {
+        const storageRef = storage.ref("photos/" + idNumber);
+        await storageRef.put(file);
+        photoUrl = await storageRef.getDownloadURL();
+      }
+
+      await db.collection("members").doc(idNumber).set({
+        idNumber, name, email, uplineId, photoUrl, progress: []
+      });
+
+      alert("Member Registered Successfully!");
+      showFullTree();
+    });
+
+    // Recursive build tree
+    async function buildTree(memberId) {
+      const snapshot = await db.collection("members").where("uplineId", "==", memberId).get();
+      let children = [];
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        children.push({
+          idNumber: data.idNumber,
+          name: data.name,
+          photoUrl: data.photoUrl || "",
+          children: await buildTree(data.idNumber)
+        });
+      }
+      return children;
+    }
+
+    function renderTree(node, container) {
+      let li = document.createElement("li");
+      li.innerHTML = `
+        <div class="p-2 shadow rounded bg-white inline-flex items-center">
+          <img src="${node.photoUrl}" class="w-12 h-12 rounded-full mr-2"/>
+          <span class="font-bold">${node.name}</span> <small>(${node.idNumber})</small>
+        </div>
+      `;
+      if (node.children && node.children.length > 0) {
+        let ul = document.createElement("ul");
+        node.children.forEach(child => renderTree(child, ul));
+        li.appendChild(ul);
+      }
+      container.appendChild(li);
+    }
+
+    async function showFullTree() {
+      const rootNode = {
+        idNumber: "ROOT",
+        name: "LITA Network",
+        photoUrl: "",
+        children: await buildTree("ROOT")
+      };
+      let container = document.getElementById("treeView");
+      container.innerHTML = "";
+      renderTree(rootNode, container);
+    }
+
+    showFullTree();
   </script>
 </body>
 </html>
+
+
+   
+ 
+
+
