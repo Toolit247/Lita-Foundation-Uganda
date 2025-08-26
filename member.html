@@ -2,6 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>LITA Member Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ul { list-style-type: none; padding-left: 20px; }
+    li { margin: 10px 0; }
+  </style>
+</head>
+<head>
+  <meta charset="UTF-8">
   <title>Member Dashboard - LITA Foundation</title>
   <!-- Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -57,8 +69,7 @@
         </div>
       </div>
     </section>
-
-    <!-- Details + Progress -->
+ <!-- Details + Progress -->
     <section class="grid grid-2">
       <div class="card">
         <h3>Your Details</h3>
@@ -85,10 +96,26 @@
       <ul id="progressHistory" style="padding-left:18px;margin:0"></ul>
     </section>
   </div>
+<body class="bg-gray-100 p-6">
+  <h1 class="text-2xl font-bold mb-4">Member Dashboard - LITA Foundation Uganda</h1>
+
+  <!-- Profile -->
+  <div id="profile" class="bg-white p-4 rounded shadow mb-6"></div>
+
+  <!-- Progress History -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold mb-2">Progress History</h2>
+    <ul id="progressList"></ul>
+  </div>
+
+  <!-- My Tree -->
+  <div class="bg-white p-4 rounded shadow">
+    <h2 class="text-xl font-semibold mb-2">My Downline Tree</h2>
+    <ul id="myTreeView"></ul>
+  </div>
 
   <script>
-    // Firebase Config
-    var firebaseConfig = {
+    const firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
       authDomain: "lita-platform-bffdc.firebaseapp.com",
       projectId: "lita-platform-bffdc",
@@ -96,8 +123,7 @@
       messagingSenderId: "387943226211",
       appId: "1:387943226211:web:0127c409e0f880df391156"
     };
-
-    firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const storage = firebase.storage();
 
@@ -210,6 +236,107 @@
     document.getElementById("logout").addEventListener("click", () => {
       firebase.auth().signOut().then(()=> location.href="signin.html");
     });
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentId = null;
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const snapshot = await db.collection("members").where("email", "==", user.email).get();
+        if (!snapshot.empty) {
+          const data = snapshot.docs[0].data();
+          currentId = data.idNumber;
+          document.getElementById("profile").innerHTML = `
+            <div class="flex items-center">
+              <img src="${data.photoUrl}" class="w-16 h-16 rounded-full mr-4"/>
+              <div>
+                <p class="font-bold">${data.name}</p>
+                <p>ID: ${data.idNumber}</p>
+                <p>Email: ${data.email}</p>
+              </div>
+            </div>
+          `;
+          let progressHTML = "";
+          (data.progress || []).forEach(p => {
+            progressHTML += `<li class="border-b py-1">${p.date}: ${p.note}</li>`;
+          });
+          document.getElementById("progressList").innerHTML = progressHTML;
+
+          showMyTree(currentId, data);
+        }
+      }
+    });
+
+    async function buildTree(memberId) {
+      const snapshot = await db.collection("members").where("uplineId", "==", memberId).get();
+      let children = [];
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        children.push({
+          idNumber: data.idNumber,
+          name: data.name,
+          photoUrl: data.photoUrl || "",
+          children: await buildTree(data.idNumber)
+        });
+      }
+      return children;
+    }
+
+    function renderTree(node, container) {
+      let li = document.createElement("li");
+      li.innerHTML = `
+        <div class="p-2 shadow rounded bg-white inline-flex items-center">
+          <img src="${node.photoUrl}" class="w-12 h-12 rounded-full mr-2"/>
+          <span class="font-bold">${node.name}</span> <small>(${node.idNumber})</small>
+        </div>
+      `;
+      if (node.children && node.children.length > 0) {
+        let ul = document.createElement("ul");
+        node.children.forEach(child => renderTree(child, ul));
+        li.appendChild(ul);
+      }
+      container.appendChild(li);
+    }
+
+    async function showMyTree(myId, data) {
+      const rootNode = {
+        idNumber: data.idNumber,
+        name: data.name,
+        photoUrl: data.photoUrl || "",
+        children: await buildTree(data.idNumber)
+      };
+      let container = document.getElementById("myTreeView");
+      container.innerHTML = "";
+      renderTree(rootNode, container);
+    }
+passward change option
+
+<h3>Change Password</h3>
+<form id="changePasswordForm">
+  <input type="password" id="currentPassword" placeholder="Current Password" required />
+  <input type="password" id="newPassword" placeholder="New Password" required />
+  <input type="password" id="confirmNewPassword" placeholder="Confirm New Password" required />
+  <button type="submit">Change Password</button>
+  <div class="message" id="passwordChangeMessage"></div>
+</form>
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
