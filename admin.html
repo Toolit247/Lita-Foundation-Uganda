@@ -49,15 +49,17 @@
     .avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
     ul.tree, ul.tree ul{list-style:none;margin-left:0;padding-left:18px}
     ul.tree li{margin:6px 0}
-    .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03)}
+    .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03);cursor:pointer}
     .node img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
+    .caret{display:inline-block;transform:rotate(90deg);transition:.15s; font-size:12px; color:#6b7280; margin-right:6px}
+    .collapsed .caret{transform:rotate(0deg)}
   </style>
 </head>
 <body>
 <header>
   <div><strong>LITA • Admin Dashboard</strong></div>
   <div class="row">
-    <input id="searchInput" placeholder="Search by name, email, phone, location, Member ID, Upline…" />
+    <input id="searchInput" class="search" placeholder="Search by name, email, phone, location, Member ID, Upline…" />
     <button id="exportCSV" class="btn secondary">Export CSV</button>
     <button id="exportPDF" class="btn secondary">Export PDF</button>
     <button id="logout" class="btn">Logout</button>
@@ -99,7 +101,7 @@
   <!-- Member Tree (from ROOT) -->
   <section class="card">
     <h3>Member Tree</h3>
-    <p style="color:#6b7280;font-size:13px;margin:6px 0 10px">Built from Upline Member IDs. Root = <code>ROOT</code>.</p>
+    <p style="color:#6b7280;font-size:13px;margin:6px 0 10px">Built from Upline Member IDs. Root = <code>ROOT</code>. Click a node to expand/collapse.</p>
     <ul id="treeRoot" class="tree"></ul>
   </section>
 
@@ -212,21 +214,108 @@
     if (did) deleteMember(did);
   });
 
-  // View progress history
+  // --- Admin: Progress history (with Edit/Delete) ---
   function viewHistory(memberDocId) {
-    const w = window.open("", "Progress History", "width=720,height=540");
-    w.document.write("<h3 style='font-family:Arial'>Progress History</h3><ul id='h' style='font-family:Arial'></ul>");
-    db.collection("members").doc(memberDocId).collection("progressHistory").orderBy("timestamp","desc").get()
-      .then(s => {
-        const list = w.document.getElementById("h");
-        s.forEach(doc => {
-          const d = doc.data();
-          const t = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
-          const li = w.document.createElement("li");
-          li.textContent = `${t} — ${d.progress}`;
-          list.appendChild(li);
-        });
-      });
+    const w = window.open("", "Progress History", "width=820,height=620");
+    // Build a full mini-page that can use Firebase to edit/delete
+    w.document.write(`
+      <!DOCTYPE html><html><head>
+      <meta charset="utf-8" />
+      <title>Progress History</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <style>
+        body{font-family:Arial,system-ui;margin:14px;background:#f6f7fb;color:#111}
+        h3{margin:0 0 10px}
+        .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px}
+        .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+        .item{display:flex;justify-content:space-between;align-items:center;border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;background:#fff;margin:8px 0}
+        .btn{padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;background:#eef2ff;cursor:pointer}
+        .btn.danger{background:#dc2626;color:#fff;border-color:#dc2626}
+        .btn.ok{background:#2563eb;color:#fff;border-color:#2563eb}
+        .muted{color:#6b7280;font-size:12px}
+      </style>
+      </head><body>
+        <div class="card">
+          <h3>Progress History</h3>
+          <div id="list"></div>
+          <div class="muted">Tip: Admin can edit or delete any entry.</div>
+        </div>
+
+        <!-- Firebase v8 -->
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+        <script>
+          var firebaseConfig = ${JSON.stringify(firebaseConfig)};
+          firebase.initializeApp(firebaseConfig);
+          const db = firebase.firestore();
+
+          const memberDocId = ${JSON.stringify(memberDocId)};
+
+          function toTime(ts){
+            try{
+              if(ts && ts.toDate) return ts.toDate().toLocaleString();
+            }catch(_){}
+            if(ts && ts.seconds) return new Date(ts.seconds*1000).toLocaleString();
+            return "—";
+          }
+
+          async function refresh(){
+            const snap = await db.collection("members").doc(memberDocId)
+              .collection("progressHistory").orderBy("timestamp","desc").get();
+            const list = document.getElementById("list");
+            list.innerHTML = "";
+            snap.forEach(doc => {
+              const d = doc.data();
+              const div = document.createElement("div");
+              div.className = "item";
+              div.innerHTML = \`
+                <div>
+                  <div><strong>\${(d.progress||"")}</strong></div>
+                  <div class="muted">\${toTime(d.timestamp)}</div>
+                </div>
+                <div class="row">
+                  <button class="btn ok" data-edit="\${doc.id}">Edit</button>
+                  <button class="btn danger" data-del="\${doc.id}">Delete</button>
+                </div>
+              \`;
+              list.appendChild(div);
+            });
+          }
+
+          async function recomputeLatest(){
+            const q = await db.collection("members").doc(memberDocId)
+              .collection("progressHistory").orderBy("timestamp","desc").limit(1).get();
+            const latest = q.empty ? "" : (q.docs[0].data().progress || "");
+            await db.collection("members").doc(memberDocId).update({ businessProgress: latest });
+          }
+
+          document.addEventListener("click", async (e)=>{
+            const del = e.target.getAttribute("data-del");
+            const ed = e.target.getAttribute("data-edit");
+            if(del){
+              if(confirm("Delete this progress entry?")){
+                await db.collection("members").doc(memberDocId)
+                  .collection("progressHistory").doc(del).delete();
+                await recomputeLatest();
+                await refresh();
+              }
+            }
+            if(ed){
+              const newVal = prompt("Update progress to:");
+              if(newVal && newVal.trim()){
+                await db.collection("members").doc(memberDocId)
+                  .collection("progressHistory").doc(ed).update({ progress:newVal.trim() });
+                await recomputeLatest();
+                await refresh();
+              }
+            }
+          });
+
+          refresh();
+        </script>
+      </body></html>
+    `);
+    w.document.close();
   }
 
   // Edit Member ID
@@ -235,7 +324,8 @@
     if (!newId) return;
     db.collection("members").doc(memberDocId).update({ memberId:newId })
       .then(()=> alert("Member ID updated"))
-      .catch(err=> alert("Failed: "+err.message));
+      .catch(err=> alert("Failed: "+err.message))
+      .finally(()=> buildAndRenderTree());
   }
 
   // Delete member (Firestore profile only; Auth user remains unless removed via server/admin SDK)
@@ -290,7 +380,7 @@
         console.warn("EmailJS error:", e);
       }
 
-      // Optionally prompt them to set their own password right away
+      // Prompt to set password right away
       try { await secondary.auth().sendPasswordResetEmail(email); } catch(_) {}
 
       await secondary.auth().signOut();
@@ -349,7 +439,7 @@
     firebase.auth().signOut().then(()=> window.location.href="signin.html");
   });
 
-  // ---------- Tree (ROOT → upline graph) ----------
+  // ---------- Tree (ROOT → upline graph) with collapse ----------
   async function fetchChildren(uplineId) {
     const snap = await db.collection("members").where("upline","==",uplineId).get();
     const res = [];
@@ -368,18 +458,34 @@
 
   function renderTreeNode(node, ul) {
     const li = document.createElement("li");
+    li.className = "collapsed";
     const img = node.photoURL || "https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(node.fullName||"LITA");
-    li.innerHTML = `
-      <div class="node">
-        <img src="${img}" alt="">
-        <div><strong>${node.fullName}</strong> <span class="pill">${node.memberId}</span></div>
-      </div>
+    const nodeDiv = document.createElement("div");
+    nodeDiv.className = "node";
+    nodeDiv.innerHTML = `
+      <span class="caret">▶</span>
+      <img src="${img}" alt="">
+      <div><strong>${node.fullName}</strong> <span class="pill">${node.memberId}</span></div>
     `;
+    li.appendChild(nodeDiv);
+
+    let sub = null;
     if (node.children && node.children.length) {
-      const sub = document.createElement("ul"); sub.className = "tree";
+      sub = document.createElement("ul");
+      sub.className = "tree";
       node.children.forEach(ch => renderTreeNode(ch, sub));
+      // start collapsed
+      sub.style.display = "none";
       li.appendChild(sub);
     }
+
+    nodeDiv.addEventListener("click", ()=>{
+      if(!sub) return; // leaf
+      const isHidden = sub.style.display === "none";
+      sub.style.display = isHidden ? "block" : "none";
+      li.classList.toggle("collapsed", !isHidden);
+    });
+
     ul.appendChild(li);
   }
 
