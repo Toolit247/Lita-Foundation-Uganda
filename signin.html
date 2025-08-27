@@ -6,50 +6,47 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background:#f1f5f9; display:flex; align-items:center; justify-content:center; height:100vh; }
-    .card { background:#fff; padding:30px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); width:300px; text-align:center; }
-    input { width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:6px; }
-    .btn { width:100%; padding:10px; background:#1d4ed8; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+    body { font-family: Arial, sans-serif; margin: 20px; background:#f8fafc; }
+    .card { background:#fff; border-radius:16px; padding:20px; width:320px; margin:auto; margin-top:100px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+    input { display:block; width:100%; margin:10px 0; padding:8px; border-radius:8px; border:1px solid #ddd; }
+    .btn { background:#1d4ed8; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; width:100%; }
     .btn:hover { background:#1e40af; }
-    .msg { margin-top:10px; font-size:14px; }
+    .msg { margin-top:10px; }
+    .msg.ok { color:green; }
+    .msg.err { color:red; }
   </style>
 </head>
 <body>
   <div class="card">
     <h2>Sign In</h2>
-    <input id="email" placeholder="Email">
+    <input id="email" type="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
-    <button class="btn" onclick="signin()">Sign In</button>
+    <button class="btn" onclick="signIn()">Login</button>
     <div class="msg" id="msg"></div>
   </div>
 
 <script>
-const firebaseConfig = { 
-  apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
-  authDomain:"lita-platform-bffdc.firebaseapp.com", 
-  projectId:"lita-platform-bffdc", 
-  storageBucket:"lita-platform-bffdc.appspot.com", 
-  messagingSenderId:"387943226211", 
-  appId:"1:387943226211:web:0127c409e0f880df391156" 
-};
-const app = firebase.initializeApp(firebaseConfig, "signinApp");
-const auth = firebase.auth(app);
+  const firebaseConfig = { 
+    apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
+    authDomain:"lita-platform-bffdc.firebaseapp.com", 
+    projectId:"lita-platform-bffdc", 
+    storageBucket:"lita-platform-bffdc.firebasestorage.app", 
+    messagingSenderId:"387943226211", 
+    appId:"1:387943226211:web:0127c409e0f880df391156" 
+  };
+  const app = firebase.initializeApp(firebaseConfig, "signinApp");
+  const auth = firebase.auth(app);
 
-async function signin(){
-  const email=document.getElementById("email").value;
-  const pass=document.getElementById("password").value;
-  const msg=document.getElementById("msg");
-  msg.textContent="";
-  try{
-    const cred=await auth.signInWithEmailAndPassword(email,pass);
-    // Simple check: if admin, redirect to admin.html else member.html
-    if(email.endsWith("@admin.com")){
-      window.location.href="admin.html";
-    } else {
-      window.location.href="member.html";
-    }
-  }catch(e){ msg.textContent="❌ "+e.message; msg.style.color="red"; }
-}
+  function signIn(){
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const msgDiv = document.getElementById("msg");
+    msgDiv.textContent=""; msgDiv.className="msg";
+    if(!email||!password){ msgDiv.textContent="Fill all fields"; msgDiv.classList.add("err"); return; }
+    auth.signInWithEmailAndPassword(email,password)
+      .then(()=>{ window.location.href="member.html"; })
+      .catch(e=>{ msgDiv.textContent=e.message; msgDiv.classList.add("err"); });
+  }
 </script>
 </body>
 </html>
