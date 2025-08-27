@@ -29,9 +29,12 @@
 </head>
 <body>
   <h2>Admin Dashboard</h2>
+
   <div class="card">
     <h3>Register Member</h3>
-    <input id="fullName" placeholder="Full Name"> <input id="email" placeholder="Email"> <input id="upline" placeholder="Upline ID">
+    <input id="fullName" placeholder="Full Name"> 
+    <input id="email" placeholder="Email"> 
+    <input id="upline" placeholder="Upline ID">
     <button class="btn" onclick="registerMember()">Register</button>
   </div>
 
@@ -40,7 +43,14 @@
     <input id="searchBox" placeholder="Search..." oninput="renderMembers()">
     <button class="btn" onclick="exportCSV()">Export CSV</button>
     <button class="btn" onclick="exportPDF()">Export PDF</button>
-    <table id="membersTable"><thead><tr><th>Name</th><th>Email</th><th>Member ID</th><th>Upline</th><th>Progress</th><th>Actions</th></tr></thead><tbody></tbody></table>
+    <table id="membersTable">
+      <thead>
+        <tr>
+          <th>Name</th><th>Email</th><th>Member ID</th><th>Upline</th><th>Progress</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <div class="card">
@@ -49,112 +59,127 @@
   </div>
 
 <script>
-// Firebase setup
-const firebaseConfig = { apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", authDomain:"lita-platform-bffdc.firebaseapp.com", projectId:"lita-platform-bffdc", storageBucket:"lita-platform-bffdc.firebasestorage.app", messagingSenderId:"387943226211", appId:"1:387943226211:web:0127c409e0f880df391156" };
-const app = firebase.initializeApp(firebaseConfig, "adminApp");
-const auth = firebase.auth(app);
-const db = firebase.firestore(app);
-emailjs.init("YOUR_EMAILJS_USERID");
+  // Firebase setup
+  const firebaseConfig = { 
+    apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
+    authDomain:"lita-platform-bffdc.firebaseapp.com", 
+    projectId:"lita-platform-bffdc", 
+    storageBucket:"lita-platform-bffdc.firebasestorage.app", 
+    messagingSenderId:"387943226211", 
+    appId:"1:387943226211:web:0127c409e0f880df391156" 
+  };
+  const app = firebase.initializeApp(firebaseConfig, "adminApp");
+  const auth = firebase.auth(app);
+  const db = firebase.firestore(app);
 
-let members = [];
+  // Initialize EmailJS
+  emailjs.init("hZgalRaZwSRy1Zgp4");
 
-async function registerMember(){
-  const fullName=document.getElementById("fullName").value.trim();
-  const email=document.getElementById("email").value.trim();
-  const upline=document.getElementById("upline").value.trim();
-  if(!fullName||!email){alert("Fill all fields");return;}
-  const memberId="M"+Date.now();
-  const tempPass=Math.random().toString(36).slice(-8);
-  try{
-    const cred=await auth.createUserWithEmailAndPassword(email,tempPass);
-    await db.collection("members").doc(cred.user.uid).set({fullName,email,upline,memberId,photoURL:"",businessProgress:[],createdAt:new Date()});
-    emailjs.send("service_mrqs34o","template_abc123",{to_email:email,fullName,memberId,tempPass});
-    alert("Member registered");
-    fetchMembers();
-  }catch(e){alert(e.message)}
-}
+  let members = [];
 
-async function fetchMembers(){
-  const snap=await db.collection("members").get();
-  members=snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderMembers();
-  buildTree();
-}
+  async function registerMember(){
+    const fullName=document.getElementById("fullName").value.trim();
+    const email=document.getElementById("email").value.trim();
+    const upline=document.getElementById("upline").value.trim();
+    if(!fullName||!email){alert("Fill all fields");return;}
+    const memberId="M"+Date.now();
+    const tempPass=Math.random().toString(36).slice(-8);
+    try{
+      const cred=await auth.createUserWithEmailAndPassword(email,tempPass);
+      await db.collection("members").doc(cred.user.uid).set({
+        fullName,email,upline,memberId,photoURL:"",businessProgress:[],createdAt:new Date()
+      });
 
-function renderMembers(){
-  const q=document.getElementById("searchBox").value.toLowerCase();
-  const tbody=document.querySelector("#membersTable tbody");
-  tbody.innerHTML="";
-  members.filter(m=>m.fullName.toLowerCase().includes(q)||m.email.toLowerCase().includes(q)||m.memberId.toLowerCase().includes(q)).forEach(m=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${m.fullName}</td><td>${m.email}</td><td>${m.memberId}</td><td>${m.upline||"-"}</td>
-      <td>${m.businessProgress.map((p,i)=>`<div class='progress-entry'>${p.text} <div class='progress-actions'><button onclick="editProgress('${m.id}',${i})">✏️</button><button onclick="deleteProgress('${m.id}',${i})">🗑️</button></div></div>`).join("")}</td>
-      <td><button class='btn' onclick="deleteMember('${m.id}')">Delete</button></td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-async function editProgress(memberId,idx){
-  const m=members.find(x=>x.id===memberId);
-  const newText=prompt("Edit progress:",m.businessProgress[idx].text);
-  if(newText){
-    m.businessProgress[idx].text=newText;
-    await db.collection("members").doc(memberId).update({businessProgress:m.businessProgress});
-    fetchMembers();
+      // Send confirmation email with temp password
+      emailjs.send("service_mrqs34o","template_abc123",{to_email:email,fullName,memberId,tempPass});
+      
+      alert("Member registered");
+      fetchMembers();
+    }catch(e){alert(e.message)}
   }
-}
 
-async function deleteProgress(memberId,idx){
-  const m=members.find(x=>x.id===memberId);
-  if(confirm("Delete this progress?")){
-    m.businessProgress.splice(idx,1);
-    await db.collection("members").doc(memberId).update({businessProgress:m.businessProgress});
-    fetchMembers();
+  async function fetchMembers(){
+    const snap=await db.collection("members").get();
+    members=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderMembers();
+    buildTree();
   }
-}
 
-async function deleteMember(id){ if(confirm("Delete member?")){ await db.collection("members").doc(id).delete(); fetchMembers(); } }
-
-function exportCSV(){
-  let csv="Name,Email,Member ID,Upline\n";
-  members.forEach(m=>{csv+=`${m.fullName},${m.email},${m.memberId},${m.upline||"-"}\n`;});
-  const blob=new Blob([csv],{type:"text/csv"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="members.csv"; a.click();
-}
-
-function exportPDF(){
-  const {jsPDF}=window.jspdf; const doc=new jsPDF();
-  doc.autoTable({head:[['Name','Email','Member ID','Upline']], body:members.map(m=>[m.fullName,m.email,m.memberId,m.upline||"-"])});
-  doc.save("members.pdf");
-}
-
-async function fetchChildren(uplineId){
-  const snap=await db.collection("members").where("upline","==",uplineId).get();
-  return snap.docs.map(d=>({id:d.id,...d.data()}));
-}
-
-function renderTreeNode(node,ul){
-  const li=document.createElement("li");
-  const hasChildren=node.children&&node.children.length>0;
-  li.innerHTML=`<div class='node'><span class='collapse-toggle'>${hasChildren?"-":""}</span><img src='${node.photoURL||"https://via.placeholder.com/28"}'><div><strong>${node.fullName}</strong> <span style='font-size:12px;color:#1d4ed8;'>${node.memberId}</span></div></div>`;
-  if(hasChildren){
-    const sub=document.createElement("ul"); sub.className="tree";
-    node.children.forEach(ch=>renderTreeNode(ch,sub));
-    li.appendChild(sub);
-    li.querySelector(".collapse-toggle").onclick=function(){ sub.style.display=sub.style.display==="none"?"block":"none"; this.textContent=this.textContent==="+"?"-":"+"; };
+  function renderMembers(){
+    const q=document.getElementById("searchBox").value.toLowerCase();
+    const tbody=document.querySelector("#membersTable tbody");
+    tbody.innerHTML="";
+    members.filter(m=>m.fullName.toLowerCase().includes(q)||m.email.toLowerCase().includes(q)||m.memberId.toLowerCase().includes(q))
+      .forEach(m=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td>${m.fullName}</td><td>${m.email}</td><td>${m.memberId}</td><td>${m.upline||"-"}</td>
+          <td>${m.businessProgress.map((p,i)=>`<div class='progress-entry'>${p.text} <div class='progress-actions'><button onclick="editProgress('${m.id}',${i})">✏️</button><button onclick="deleteProgress('${m.id}',${i})">🗑️</button></div></div>`).join("")}</td>
+          <td><button class='btn' onclick="deleteMember('${m.id}')">Delete</button></td>`;
+        tbody.appendChild(tr);
+      });
   }
-  ul.appendChild(li);
-}
 
-async function buildTree(){
-  const root=document.getElementById("treeRoot"); root.innerHTML="";
-  const snap=await db.collection("members").get();
-  const map={}; snap.forEach(d=>map[d.data().memberId]={...d.data(),children:[]});
-  Object.values(map).forEach(m=>{ if(m.upline&&map[m.upline]) map[m.upline].children.push(m); });
-  Object.values(map).filter(m=>!m.upline).forEach(m=>renderTreeNode(m,root));
-}
+  async function editProgress(memberId,idx){
+    const m=members.find(x=>x.id===memberId);
+    const newText=prompt("Edit progress:",m.businessProgress[idx].text);
+    if(newText){
+      m.businessProgress[idx].text=newText;
+      await db.collection("members").doc(memberId).update({businessProgress:m.businessProgress});
+      fetchMembers();
+    }
+  }
 
-fetchMembers();
+  async function deleteProgress(memberId,idx){
+    const m=members.find(x=>x.id===memberId);
+    if(confirm("Delete this progress?")){
+      m.businessProgress.splice(idx,1);
+      await db.collection("members").doc(memberId).update({businessProgress:m.businessProgress});
+      fetchMembers();
+    }
+  }
+
+  async function deleteMember(id){ if(confirm("Delete member?")){ await db.collection("members").doc(id).delete(); fetchMembers(); } }
+
+  function exportCSV(){
+    let csv="Name,Email,Member ID,Upline\n";
+    members.forEach(m=>{csv+=`${m.fullName},${m.email},${m.memberId},${m.upline||"-"}\n`;});
+    const blob=new Blob([csv],{type:"text/csv"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="members.csv"; a.click();
+  }
+
+  function exportPDF(){
+    const {jsPDF}=window.jspdf; const doc=new jsPDF();
+    doc.autoTable({head:[['Name','Email','Member ID','Upline']], body:members.map(m=>[m.fullName,m.email,m.memberId,m.upline||"-"])});
+    doc.save("members.pdf");
+  }
+
+  async function fetchChildren(uplineId){
+    const snap=await db.collection("members").where("upline","==",uplineId).get();
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  }
+
+  function renderTreeNode(node,ul){
+    const li=document.createElement("li");
+    const hasChildren=node.children&&node.children.length>0;
+    li.innerHTML=`<div class='node'><span class='collapse-toggle'>${hasChildren?"-":""}</span><img src='${node.photoURL||"https://via.placeholder.com/28"}'><div><strong>${node.fullName}</strong> <span style='font-size:12px;color:#1d4ed8;'>${node.memberId}</span></div></div>`;
+    if(hasChildren){
+      const sub=document.createElement("ul"); sub.className="tree";
+      node.children.forEach(ch=>renderTreeNode(ch,sub));
+      li.appendChild(sub);
+      li.querySelector(".collapse-toggle").onclick=function(){ sub.style.display=sub.style.display==="none"?"block":"none"; this.textContent=this.textContent==="+"?"-":"+"; };
+    }
+    ul.appendChild(li);
+  }
+
+  async function buildTree(){
+    const root=document.getElementById("treeRoot"); root.innerHTML="";
+    const snap=await db.collection("members").get();
+    const map={}; snap.forEach(d=>map[d.data().memberId]={...d.data(),children:[]});
+    Object.values(map).forEach(m=>{ if(m.upline&&map[m.upline]) map[m.upline].children.push(m); });
+    Object.values(map).filter(m=>!m.upline).forEach(m=>renderTreeNode(m,root));
+  }
+
+  fetchMembers();
 </script>
 </body>
 </html>
