@@ -3,160 +3,148 @@
 <head>
   <meta charset="UTF-8">
   <title>LITA Member Dashboard</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background:#f9fafb; margin:0; }
-    header { background:#2563eb; color:white; padding:1rem; }
-    .container { padding:1.5rem; }
-    .card { background:white; padding:1rem; margin-bottom:1rem; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.1); }
-    button { background:#2563eb; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
-    button:hover { background:#1e40af; }
-    .tree { list-style:none; padding-left:20px; }
-    .node { padding:4px; border:1px solid #ccc; border-radius:8px; display:inline-block; margin:4px; cursor:pointer; }
-    .hidden { display:none; }
+    body { font-family: Arial, sans-serif; margin:20px; background:#f8fafc; }
+    h2 { color:#1e293b; }
+    .card { background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+    .btn { background:#1d4ed8; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+    .btn:hover { background:#1e40af; }
+    .progress-entry { background:#f1f5f9; padding:6px; border-radius:6px; margin:4px 0; display:flex; justify-content:space-between; }
+    .progress-actions button { margin-left:6px; background:#64748b; color:#fff; border:none; border-radius:4px; padding:4px 8px; }
+    .progress-actions button:hover { background:#475569; }
+    .tree ul { list-style:none; padding-left:20px; }
+    .node { display:flex; align-items:center; cursor:pointer; }
+    .node img { width:28px; height:28px; border-radius:50%; margin-right:8px; }
+    .collapse-toggle { margin-right:6px; cursor:pointer; font-weight:bold; color:#1d4ed8; }
   </style>
 </head>
 <body>
-<header>
-  <h2>LITA Member Dashboard</h2>
-</header>
-<div class="container">
-  <div id="profileCard" class="card">
-    <h3>Profile</h3>
-    <img id="profilePhoto" src="" alt="Profile Photo" width="80" style="border-radius:50%"><br>
-    <input type="file" id="photoInput"><br>
-    <p><strong>Name:</strong> <span id="profileName"></span></p>
-    <p><strong>Member ID:</strong> <span id="profileId"></span></p>
-    <button onclick="logout()">Logout</button>
-    <button onclick="resetPassword()">Reset Password</button>
+  <h2>Member Dashboard</h2>
+  <button class="btn" onclick="logout()">Logout</button>
+
+  <div class="card">
+    <h3>My Profile</h3>
+    <div id="profileBox"></div>
   </div>
 
   <div class="card">
-    <h3>Business Progress</h3>
-    <input type="text" id="progressInput" placeholder="Update your progress">
-    <button onclick="saveProgress()">Submit</button>
-    <ul id="progressList"></ul>
+    <h3>My Progress</h3>
+    <input id="newProgress" placeholder="Enter new progress...">
+    <button class="btn" onclick="addProgress()">Add</button>
+    <div id="progressList"></div>
   </div>
 
   <div class="card">
     <h3>My Downline</h3>
-    <ul id="treeRoot" class="tree"></ul>
+    <ul class="tree" id="downlineTree"></ul>
   </div>
-</div>
 
 <script>
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
-    authDomain: "lita-platform-bffdc.firebaseapp.com",
-    projectId: "lita-platform-bffdc",
-    storageBucket: "lita-platform-bffdc.appspot.com",
-    messagingSenderId: "387943226211",
-    appId: "1:387943226211:web:0127c409e0f880df391156"
+const firebaseConfig = { 
+  apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
+  authDomain:"lita-platform-bffdc.firebaseapp.com", 
+  projectId:"lita-platform-bffdc", 
+  storageBucket:"lita-platform-bffdc.appspot.com", 
+  messagingSenderId:"387943226211", 
+  appId:"1:387943226211:web:0127c409e0f880df391156" 
+};
+const app = firebase.initializeApp(firebaseConfig, "memberApp");
+const auth = firebase.auth(app);
+const db = firebase.firestore(app);
+
+let currentUser = null;
+let currentProfile = null;
+
+auth.onAuthStateChanged(async user=>{
+  if(!user){ window.location.href="signin.html"; return; }
+  currentUser = user;
+  const doc = await db.collection("members").doc(user.uid).get();
+  currentProfile = { id:doc.id, ...doc.data() };
+  renderProfile();
+  renderProgress();
+  buildDownline();
+});
+
+function renderProfile(){
+  document.getElementById("profileBox").innerHTML = `
+    <p><strong>Name:</strong> ${currentProfile.fullName}</p>
+    <p><strong>Email:</strong> ${currentProfile.email}</p>
+    <p><strong>Member ID:</strong> ${currentProfile.memberId}</p>
+    <p><strong>Upline:</strong> ${currentProfile.upline||"-"}</p>
+  `;
+}
+
+function renderProgress(){
+  const list=document.getElementById("progressList"); list.innerHTML="";
+  (currentProfile.businessProgress||[]).forEach((p,i)=>{
+    const div=document.createElement("div");
+    div.className="progress-entry";
+    div.innerHTML=`${p.text}<div class="progress-actions">
+      <button onclick="editProgress(${i})">✏️</button>
+      <button onclick="deleteProgress(${i})">🗑️</button>
+    </div>`;
+    list.appendChild(div);
+  });
+}
+
+async function addProgress(){
+  const text=document.getElementById("newProgress").value.trim();
+  if(!text) return;
+  const updated=[...(currentProfile.businessProgress||[]),{text}];
+  await db.collection("members").doc(currentProfile.id).update({businessProgress:updated});
+  currentProfile.businessProgress=updated;
+  document.getElementById("newProgress").value="";
+  renderProgress();
+}
+
+async function editProgress(idx){
+  const newText=prompt("Edit progress:",currentProfile.businessProgress[idx].text);
+  if(newText){
+    currentProfile.businessProgress[idx].text=newText;
+    await db.collection("members").doc(currentProfile.id).update({businessProgress:currentProfile.businessProgress});
+    renderProgress();
+  }
+}
+
+async function deleteProgress(idx){
+  if(confirm("Delete this progress?")){
+    currentProfile.businessProgress.splice(idx,1);
+    await db.collection("members").doc(currentProfile.id).update({businessProgress:currentProfile.businessProgress});
+    renderProgress();
+  }
+}
+
+async function fetchChildren(uplineId){
+  const snap=await db.collection("members").where("upline","==",uplineId).get();
+  return snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+async function buildDownline(){
+  const root=document.getElementById("downlineTree"); root.innerHTML="";
+  const children=await fetchChildren(currentProfile.memberId);
+  children.forEach(c=>renderTreeNode(c,root));
+}
+
+function renderTreeNode(node,ul){
+  const li=document.createElement("li");
+  li.innerHTML=`<div class='node'>
+    <span class='collapse-toggle'>+</span>
+    <img src='${node.photoURL||"https://via.placeholder.com/28"}'>
+    <div><strong>${node.fullName}</strong> <span style='font-size:12px;color:#1d4ed8;'>${node.memberId}</span></div>
+  </div>`;
+  const sub=document.createElement("ul"); sub.className="tree"; sub.style.display="none"; li.appendChild(sub);
+  li.querySelector(".collapse-toggle").onclick=async function(){
+    if(sub.childElementCount===0){ (await fetchChildren(node.memberId)).forEach(ch=>renderTreeNode(ch,sub)); }
+    sub.style.display=sub.style.display==="none"?"block":"none";
+    this.textContent=this.textContent==="+"?"-":"+"; 
   };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-  const storage = firebase.storage();
+  ul.appendChild(li);
+}
 
-  let currentUser, myMemberId;
-
-  auth.onAuthStateChanged(async (user)=>{
-    if(!user){ window.location.href = "index.html"; return; }
-    currentUser=user;
-    const snap = await db.collection("members").doc(user.uid).get();
-    if(!snap.exists){ alert("Not registered by admin"); return; }
-    const d = snap.data();
-    myMemberId = d.memberId;
-    document.getElementById("profileName").innerText=d.fullName;
-    document.getElementById("profileId").innerText=d.memberId;
-    document.getElementById("profilePhoto").src=d.photoURL||"";
-    loadProgress(d.businessProgress||[]);
-    buildAndRenderTree();
-  });
-
-  // Profile photo upload
-  document.getElementById("photoInput").addEventListener("change", async(e)=>{
-    const file = e.target.files[0];
-    if(!file) return;
-    const ref = storage.ref(`photos/${currentUser.uid}`);
-    await ref.put(file);
-    const url = await ref.getDownloadURL();
-    await db.collection("members").doc(currentUser.uid).update({photoURL:url});
-    document.getElementById("profilePhoto").src=url;
-  });
-
-  // Save Progress
-  async function saveProgress(){
-    const val=document.getElementById("progressInput").value;
-    if(!val) return;
-    const snap=await db.collection("members").doc(currentUser.uid).get();
-    let arr=snap.data().businessProgress||[];
-    arr.push({text:val,timestamp:Date.now()});
-    await db.collection("members").doc(currentUser.uid).update({businessProgress:arr});
-    document.getElementById("progressInput").value="";
-    loadProgress(arr);
-  }
-
-  // Load Progress with edit/delete
-  function loadProgress(arr){
-    const ul=document.getElementById("progressList"); ul.innerHTML="";
-    arr.forEach((p,i)=>{
-      const li=document.createElement("li");
-      li.innerHTML=`${p.text} <button onclick="editProgress(${i})">Edit</button> <button onclick="deleteProgress(${i})">Delete</button>`;
-      ul.appendChild(li);
-    });
-  }
-  async function editProgress(i){
-    const snap=await db.collection("members").doc(currentUser.uid).get();
-    let arr=snap.data().businessProgress||[];
-    const newText=prompt("Edit progress:",arr[i].text);
-    if(newText!==null){ arr[i].text=newText; await db.collection("members").doc(currentUser.uid).update({businessProgress:arr}); loadProgress(arr);} 
-  }
-  async function deleteProgress(i){
-    const snap=await db.collection("members").doc(currentUser.uid).get();
-    let arr=snap.data().businessProgress||[];
-    arr.splice(i,1);
-    await db.collection("members").doc(currentUser.uid).update({businessProgress:arr});
-    loadProgress(arr);
-  }
-
-  // Downline Tree
-  async function fetchChildren(upline){
-    const snap=await db.collection("members").where("upline","==",upline).get();
-    const children=[];
-    for(const doc of snap.docs){
-      const d=doc.data();
-      children.push({fullName:d.fullName,memberId:d.memberId,photoURL:d.photoURL||"",children:await fetchChildren(d.memberId)});
-    }
-    return children;
-  }
-
-  function renderTreeNode(node,ul){
-    const li=document.createElement("li");
-    const hasChildren=node.children&&node.children.length;
-    const img=node.photoURL||"https://via.placeholder.com/30";
-    li.innerHTML=`<div class="node" onclick="this.nextSibling.classList.toggle('hidden')"><img src="${img}" width="30" style="border-radius:50%"> ${node.fullName} <span style='color:#1d4ed8'>${node.memberId}</span></div>`;
-    if(hasChildren){
-      const sub=document.createElement("ul"); sub.className="tree hidden";
-      node.children.forEach(ch=>renderTreeNode(ch,sub));
-      li.appendChild(sub);
-    }
-    ul.appendChild(li);
-  }
-
-  async function buildAndRenderTree(){
-    const rootEl=document.getElementById("treeRoot"); rootEl.innerHTML="";
-    const root={fullName:"Me",memberId:myMemberId,photoURL:"",children:await fetchChildren(myMemberId)};
-    renderTreeNode(root,rootEl);
-  }
-
-  // Logout / Reset
-  function logout(){auth.signOut();}
-  function resetPassword(){auth.sendPasswordResetEmail(currentUser.email).then(()=>alert("Password reset sent"));}
+function logout(){ auth.signOut(); }
 </script>
 </body>
 </html>
