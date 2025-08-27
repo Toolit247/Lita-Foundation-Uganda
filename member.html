@@ -1,97 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Member Dashboard - LITA Foundation Uganda</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Firebase v8 to match the rest -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <meta charset="UTF-8">
+  <title>LITA Member Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
   <style>
-    :root{--bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--brand:#2563eb;--border:#e5e7eb;--ok:#16a34a;--err:#dc2626}
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;color:var(--text)}
-    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border)}
-    .container{max-width:900px;margin:18px auto;padding:0 14px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.03)}
-    h2,h3{margin:0 0 10px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    input,button{padding:11px;border:1px solid var(--border);border-radius:10px;font:inherit}
-    input{width:100%}
-    .btn{background:var(--brand);color:#fff;border:none;cursor:pointer;font-weight:600}
-    .btn.outline{background:#eef2ff;color:#111}
-    .msg{margin-top:8px;font-weight:600}
-    .ok{color:var(--ok)} .err{color:var(--err)}
-    .avatar{width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
-    ul.tree, ul.tree ul{list-style:none;margin-left:0;padding-left:18px}
-    ul.tree li{margin:6px 0}
-    .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03);cursor:pointer}
-    .node img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
-    table{width:100%;border-collapse:collapse}
-    td{padding:8px;border-bottom:1px solid var(--border)}
-    .tag{margin-left:6px;color:#1d4ed8;background:#eef2ff;padding:0 6px;border-radius:999px}
-    .item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#fff;margin:8px 0}
-    .muted{color:#6b7280;font-size:12px}
-    .btn.small{padding:6px 8px;border-radius:8px}
-    .btn.warn{background:#f59e0b;color:#fff;border:1px solid #f59e0b}
-    .btn.danger{background:#dc2626;color:#fff;border:1px solid #dc2626}
-    .caret{display:inline-block;transform:rotate(90deg);transition:.15s; font-size:12px; color:#6b7280; margin-right:6px}
-    .collapsed .caret{transform:rotate(0deg)}
+    body { font-family: Arial, sans-serif; background:#f9fafb; margin:0; }
+    header { background:#2563eb; color:white; padding:1rem; }
+    .container { padding:1.5rem; }
+    .card { background:white; padding:1rem; margin-bottom:1rem; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.1); }
+    button { background:#2563eb; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+    button:hover { background:#1e40af; }
+    .tree { list-style:none; padding-left:20px; }
+    .node { padding:4px; border:1px solid #ccc; border-radius:8px; display:inline-block; margin:4px; cursor:pointer; }
+    .hidden { display:none; }
   </style>
 </head>
 <body>
 <header>
-  <div><strong>LITA • Member Dashboard</strong></div>
-  <div class="row">
-    <button id="resetPwd" class="btn outline">Reset Password</button>
-    <button id="logout" class="btn">Logout</button>
-  </div>
+  <h2>LITA Member Dashboard</h2>
 </header>
-
 <div class="container">
-  <!-- Profile -->
-  <section class="card">
-    <h3>Your Profile</h3>
-    <div class="row" style="align-items:center">
-      <img id="avatar" class="avatar" src="https://ui-avatars.com/api/?background=E5E7EB&color=111&name=LITA" alt="">
-      <div id="profileText"></div>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <input type="file" id="photoFile" accept="image/*" />
-      <button id="uploadPhoto" class="btn">Upload Photo</button>
-    </div>
-    <div id="photoMsg" class="msg"></div>
-  </section>
+  <div id="profileCard" class="card">
+    <h3>Profile</h3>
+    <img id="profilePhoto" src="" alt="Profile Photo" width="80" style="border-radius:50%"><br>
+    <input type="file" id="photoInput"><br>
+    <p><strong>Name:</strong> <span id="profileName"></span></p>
+    <p><strong>Member ID:</strong> <span id="profileId"></span></p>
+    <button onclick="logout()">Logout</button>
+    <button onclick="resetPassword()">Reset Password</button>
+  </div>
 
-  <!-- Update Business Progress -->
-  <section class="card" style="margin-top:14px">
-    <h3>Update Business Progress</h3>
-    <form id="progressForm" class="row">
-      <input type="text" id="businessProgress" placeholder="Enter your progress" required />
-      <button type="submit" class="btn">Update</button>
-    </form>
-    <div id="updateMessage" class="msg"></div>
-  </section>
+  <div class="card">
+    <h3>Business Progress</h3>
+    <input type="text" id="progressInput" placeholder="Update your progress">
+    <button onclick="saveProgress()">Submit</button>
+    <ul id="progressList"></ul>
+  </div>
 
-  <!-- Progress history (editable) -->
-  <section class="card" style="margin-top:14px">
-    <h3>Progress History</h3>
-    <div id="progressHistory"></div>
-  </section>
-
-  <!-- Downline tree -->
-  <section class="card" style="margin-top:14px">
-    <h3>Your Downline</h3>
-    <p class="muted" style="margin:6px 0 10px">Click a node to expand/collapse.</p>
+  <div class="card">
+    <h3>My Downline</h3>
     <ul id="treeRoot" class="tree"></ul>
-  </section>
+  </div>
 </div>
 
 <script>
-  // Firebase v8
-  var firebaseConfig = {
+  // Firebase config
+  const firebaseConfig = {
     apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
     authDomain: "lita-platform-bffdc.firebaseapp.com",
     projectId: "lita-platform-bffdc",
@@ -100,226 +58,105 @@
     appId: "1:387943226211:web:0127c409e0f880df391156"
   };
   firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
   const db = firebase.firestore();
   const storage = firebase.storage();
 
-  let memberDocRef = null;
-  let myMemberId = "";
+  let currentUser, myMemberId;
 
-  // Auth guard + load
-  firebase.auth().onAuthStateChanged(async (user)=>{
-    if(!user){ window.location.href="signin.html"; return; }
-    const doc = await db.collection("members").doc(user.uid).get();
-    if(!doc.exists){
-      await firebase.auth().signOut();
-      alert("Access denied: not registered as a member.");
-      window.location.href="signin.html";
-      return;
-    }
-    memberDocRef = doc.ref;
-    const d = doc.data();
-    myMemberId = d.memberId || "";
-    renderProfile(d);
-    await loadProgressHistory();
+  auth.onAuthStateChanged(async (user)=>{
+    if(!user){ window.location.href = "index.html"; return; }
+    currentUser=user;
+    const snap = await db.collection("members").doc(user.uid).get();
+    if(!snap.exists){ alert("Not registered by admin"); return; }
+    const d = snap.data();
+    myMemberId = d.memberId;
+    document.getElementById("profileName").innerText=d.fullName;
+    document.getElementById("profileId").innerText=d.memberId;
+    document.getElementById("profilePhoto").src=d.photoURL||"";
+    loadProgress(d.businessProgress||[]);
     buildAndRenderTree();
   });
 
-  function renderProfile(d){
-    const avatar = document.getElementById("avatar");
-    avatar.src = d.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(d.fullName||"LITA"));
-    document.getElementById("profileText").innerHTML = `
-      <table>
-        <tr><td><strong>Name</strong></td><td>${d.fullName||""}</td></tr>
-        <tr><td><strong>Email</strong></td><td>${d.email||""}</td></tr>
-        <tr><td><strong>Member ID</strong></td><td>${d.memberId||""}</td></tr>
-        <tr><td><strong>Upline</strong></td><td>${d.upline||""}</td></tr>
-        <tr><td><strong>Phone</strong></td><td>${d.phone||""}</td></tr>
-        <tr><td><strong>Gender</strong></td><td>${d.gender||""}</td></tr>
-        <tr><td><strong>Location</strong></td><td>${d.location||""}</td></tr>
-        <tr><td><strong>Current Progress</strong></td><td>${d.businessProgress||"N/A"}</td></tr>
-      </table>
-    `;
+  // Profile photo upload
+  document.getElementById("photoInput").addEventListener("change", async(e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const ref = storage.ref(`photos/${currentUser.uid}`);
+    await ref.put(file);
+    const url = await ref.getDownloadURL();
+    await db.collection("members").doc(currentUser.uid).update({photoURL:url});
+    document.getElementById("profilePhoto").src=url;
+  });
+
+  // Save Progress
+  async function saveProgress(){
+    const val=document.getElementById("progressInput").value;
+    if(!val) return;
+    const snap=await db.collection("members").doc(currentUser.uid).get();
+    let arr=snap.data().businessProgress||[];
+    arr.push({text:val,timestamp:Date.now()});
+    await db.collection("members").doc(currentUser.uid).update({businessProgress:arr});
+    document.getElementById("progressInput").value="";
+    loadProgress(arr);
   }
 
-  // Photo upload (members only)
-  document.getElementById("uploadPhoto").addEventListener("click", async ()=>{
-    const file = document.getElementById("photoFile").files[0];
-    const msg = document.getElementById("photoMsg");
-    msg.textContent = ""; msg.className="msg";
-    if(!file){ msg.textContent="❌ Please select an image."; msg.classList.add("err"); return; }
-    try{
-      const uid = firebase.auth().currentUser.uid;
-      const ref = storage.ref(`member_photos/${uid}/${Date.now()}_${file.name}`);
-      await ref.put(file);
-      const url = await ref.getDownloadURL();
-      await memberDocRef.update({ photoURL:url });
-      msg.textContent = "✅ Photo uploaded.";
-      msg.classList.add("ok");
-      const d = (await memberDocRef.get()).data();
-      renderProfile(d);
-    }catch(e){
-      msg.textContent = "❌ " + e.message;
-      msg.classList.add("err");
-    }
-  });
-
-  // Update progress + history
-  document.getElementById("progressForm").addEventListener("submit", async (e)=>{
-    e.preventDefault();
-    const progress = document.getElementById("businessProgress").value.trim();
-    const updateMsg = document.getElementById("updateMessage");
-    updateMsg.textContent=""; updateMsg.className="msg";
-    try{
-      // Set current progress on profile
-      await memberDocRef.update({ businessProgress: progress });
-      // Add to history
-      await memberDocRef.collection("progressHistory").add({
-        progress,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      document.getElementById("businessProgress").value="";
-      updateMsg.textContent="✅ Progress updated.";
-      updateMsg.classList.add("ok");
-      await loadProgressHistory();
-      const d = (await memberDocRef.get()).data();
-      renderProfile(d);
-    }catch(e){
-      updateMsg.textContent="❌ " + e.message;
-      updateMsg.classList.add("err");
-    }
-  });
-
-  // Render editable history list
-  async function loadProgressHistory(){
-    const snap = await memberDocRef.collection("progressHistory").orderBy("timestamp","desc").get();
-    const container = document.getElementById("progressHistory");
-    container.innerHTML = "";
-    snap.forEach(doc=>{
-      const d = doc.data();
-      const time = (d.timestamp && d.timestamp.toDate) ? d.timestamp.toDate().toLocaleString() : "—";
-      const row = document.createElement("div");
-      row.className = "item";
-      row.innerHTML = `
-        <div>
-          <div><strong>${(d.progress||"")}</strong></div>
-          <div class="muted">${time}</div>
-        </div>
-        <div class="row">
-          <button class="btn small warn" data-edit="${doc.id}">Edit</button>
-          <button class="btn small danger" data-del="${doc.id}">Delete</button>
-        </div>
-      `;
-      container.appendChild(row);
+  // Load Progress with edit/delete
+  function loadProgress(arr){
+    const ul=document.getElementById("progressList"); ul.innerHTML="";
+    arr.forEach((p,i)=>{
+      const li=document.createElement("li");
+      li.innerHTML=`${p.text} <button onclick="editProgress(${i})">Edit</button> <button onclick="deleteProgress(${i})">Delete</button>`;
+      ul.appendChild(li);
     });
   }
-
-  // Edit/Delete handlers for history
-  document.getElementById("progressHistory").addEventListener("click", async (e)=>{
-    const delId = e.target.getAttribute("data-del");
-    const editId = e.target.getAttribute("data-edit");
-
-    async function recomputeLatestToProfile(){
-      const q = await memberDocRef.collection("progressHistory").orderBy("timestamp","desc").limit(1).get();
-      const latest = q.empty ? "" : (q.docs[0].data().progress||"");
-      await memberDocRef.update({ businessProgress: latest });
-      const d = (await memberDocRef.get()).data();
-      renderProfile(d);
-    }
-
-    if(delId){
-      if(!confirm("Delete this progress entry?")) return;
-      try{
-        await memberDocRef.collection("progressHistory").doc(delId).delete();
-        await recomputeLatestToProfile();
-        await loadProgressHistory();
-      }catch(err){ alert(err.message); }
-    }
-
-    if(editId){
-      const curSnap = await memberDocRef.collection("progressHistory").doc(editId).get();
-      const cur = (curSnap.exists && curSnap.data().progress) ? curSnap.data().progress : "";
-      const newVal = prompt("Update progress:", cur);
-      if(!newVal || !newVal.trim()) return;
-      try{
-        await memberDocRef.collection("progressHistory").doc(editId).update({ progress:newVal.trim() });
-        await recomputeLatestToProfile();
-        await loadProgressHistory();
-      }catch(err){ alert(err.message); }
-    }
-  });
-
-  // Password reset (sends email to logged-in member)
-  document.getElementById("resetPwd").addEventListener("click", async ()=>{
-    const user = firebase.auth().currentUser;
-    if(!user || !user.email){ alert("No email found for your account."); return; }
-    try{
-      await firebase.auth().sendPasswordResetEmail(user.email);
-      alert("Password reset email sent.");
-    }catch(e){ alert(e.message); }
-  });
-
-  // Logout
-  document.getElementById("logout").addEventListener("click", ()=>{
-    firebase.auth().signOut().then(()=> window.location.href="signin.html");
-  });
-
-  // -------- Downline tree (based on your Member ID as upline) with collapse --------
-  async function fetchChildren(uplineId) {
-    const snap = await db.collection("members").where("upline","==",uplineId).get();
-    const res = [];
-    for (const doc of snap.docs) {
-      const d = doc.data();
-      res.push({
-        id: doc.id,
-        fullName: d.fullName||"",
-        memberId: d.memberId||"",
-        photoURL: d.photoURL||"",
-        children: await fetchChildren(d.memberId||"")
-      });
-    }
-    return res;
+  async function editProgress(i){
+    const snap=await db.collection("members").doc(currentUser.uid).get();
+    let arr=snap.data().businessProgress||[];
+    const newText=prompt("Edit progress:",arr[i].text);
+    if(newText!==null){ arr[i].text=newText; await db.collection("members").doc(currentUser.uid).update({businessProgress:arr}); loadProgress(arr);} 
+  }
+  async function deleteProgress(i){
+    const snap=await db.collection("members").doc(currentUser.uid).get();
+    let arr=snap.data().businessProgress||[];
+    arr.splice(i,1);
+    await db.collection("members").doc(currentUser.uid).update({businessProgress:arr});
+    loadProgress(arr);
   }
 
-  function renderTreeNode(node, ul) {
-    const li = document.createElement("li");
-    li.className = "collapsed";
-    const img = node.photoURL || "https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(node.fullName||"LITA");
-    const nodeDiv = document.createElement("div");
-    nodeDiv.className = "node";
-    nodeDiv.innerHTML = `
-      <span class="caret">▶</span>
-      <img src="${img}" alt="">
-      <div><strong>${node.fullName}</strong> <span class="tag">${node.memberId}</span></div>
-    `;
-    li.appendChild(nodeDiv);
+  // Downline Tree
+  async function fetchChildren(upline){
+    const snap=await db.collection("members").where("upline","==",upline).get();
+    const children=[];
+    for(const doc of snap.docs){
+      const d=doc.data();
+      children.push({fullName:d.fullName,memberId:d.memberId,photoURL:d.photoURL||"",children:await fetchChildren(d.memberId)});
+    }
+    return children;
+  }
 
-    let sub = null;
-    if (node.children && node.children.length) {
-      sub = document.createElement("ul");
-      sub.className="tree";
-      node.children.forEach(ch => renderTreeNode(ch, sub));
-      sub.style.display = "none"; // start collapsed
+  function renderTreeNode(node,ul){
+    const li=document.createElement("li");
+    const hasChildren=node.children&&node.children.length;
+    const img=node.photoURL||"https://via.placeholder.com/30";
+    li.innerHTML=`<div class="node" onclick="this.nextSibling.classList.toggle('hidden')"><img src="${img}" width="30" style="border-radius:50%"> ${node.fullName} <span style='color:#1d4ed8'>${node.memberId}</span></div>`;
+    if(hasChildren){
+      const sub=document.createElement("ul"); sub.className="tree hidden";
+      node.children.forEach(ch=>renderTreeNode(ch,sub));
       li.appendChild(sub);
     }
-
-    nodeDiv.addEventListener("click", ()=>{
-      if(!sub) return;
-      const isHidden = sub.style.display === "none";
-      sub.style.display = isHidden ? "block" : "none";
-      li.classList.toggle("collapsed", !isHidden);
-    });
-
     ul.appendChild(li);
   }
 
   async function buildAndRenderTree(){
-    const rootEl = document.getElementById("treeRoot");
-    rootEl.innerHTML = "";
-    if(!myMemberId) { rootEl.innerHTML = "<li>No Member ID found.</li>"; return; }
-    const profile = (await memberDocRef.get()).data();
-    const root = { fullName: "Me", memberId: myMemberId, photoURL: profile.photoURL||"", children: await fetchChildren(myMemberId) };
-    renderTreeNode(root, rootEl);
+    const rootEl=document.getElementById("treeRoot"); rootEl.innerHTML="";
+    const root={fullName:"Me",memberId:myMemberId,photoURL:"",children:await fetchChildren(myMemberId)};
+    renderTreeNode(root,rootEl);
   }
+
+  // Logout / Reset
+  function logout(){auth.signOut();}
+  function resetPassword(){auth.sendPasswordResetEmail(currentUser.email).then(()=>alert("Password reset sent"));}
 </script>
 </body>
 </html>
