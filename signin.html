@@ -6,47 +6,51 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background:#f8fafc; }
-    .card { background:#fff; border-radius:16px; padding:20px; width:320px; margin:auto; margin-top:100px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
-    input { display:block; width:100%; margin:10px 0; padding:8px; border-radius:8px; border:1px solid #ddd; }
-    .btn { background:#1d4ed8; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; width:100%; }
+    body { font-family: Arial,sans-serif; background:#f8fafc; display:flex; justify-content:center; align-items:center; height:100vh; }
+    .card { background:#fff; padding:30px; border-radius:16px; box-shadow:0 2px 6px rgba(0,0,0,0.08); width:320px; }
+    input { width:100%; padding:10px; margin:6px 0; border-radius:6px; border:1px solid #ddd; }
+    .btn { width:100%; padding:10px; margin-top:10px; background:#1d4ed8; color:#fff; border:none; border-radius:8px; cursor:pointer; }
     .btn:hover { background:#1e40af; }
-    .msg { margin-top:10px; }
-    .msg.ok { color:green; }
-    .msg.err { color:red; }
+    .msg { margin-top:10px; color:red; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Sign In</h2>
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <button class="btn" onclick="signIn()">Login</button>
-    <div class="msg" id="msg"></div>
-  </div>
+<div class="card">
+  <h2>Sign In</h2>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <button class="btn" onclick="signIn()">Sign In</button>
+  <div class="msg" id="msg"></div>
+</div>
 
 <script>
-  const firebaseConfig = { 
-    apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
-    authDomain:"lita-platform-bffdc.firebaseapp.com", 
-    projectId:"lita-platform-bffdc", 
-    storageBucket:"lita-platform-bffdc.firebasestorage.app", 
-    messagingSenderId:"387943226211", 
-    appId:"1:387943226211:web:0127c409e0f880df391156" 
-  };
-  const app = firebase.initializeApp(firebaseConfig, "signinApp");
-  const auth = firebase.auth(app);
+const firebaseConfig = { 
+  apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
+  authDomain:"lita-platform-bffdc.firebaseapp.com", 
+  projectId:"lita-platform-bffdc", 
+  storageBucket:"lita-platform-bffdc.firebasestorage.app", 
+  messagingSenderId:"387943226211", 
+  appId:"1:387943226211:web:0127c409e0f880df391156" 
+};
+firebase.initializeApp(firebaseConfig);
 
-  function signIn(){
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const msgDiv = document.getElementById("msg");
-    msgDiv.textContent=""; msgDiv.className="msg";
-    if(!email||!password){ msgDiv.textContent="Fill all fields"; msgDiv.classList.add("err"); return; }
-    auth.signInWithEmailAndPassword(email,password)
-      .then(()=>{ window.location.href="member.html"; })
-      .catch(e=>{ msgDiv.textContent=e.message; msgDiv.classList.add("err"); });
-  }
+function signIn(){
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const msg = document.getElementById("msg");
+  msg.textContent="";
+  if(!email || !password){ msg.textContent="Fill all fields"; return; }
+  firebase.auth().signInWithEmailAndPassword(email,password)
+    .then(cred => {
+      // If admin email, redirect to admin
+      if(email === "toolitambrosehenry@gmail.com"){
+        window.location.href="admin.html";
+      } else {
+        window.location.href="member.html";
+      }
+    })
+    .catch(e => msg.textContent = e.message);
+}
 </script>
 </body>
 </html>
