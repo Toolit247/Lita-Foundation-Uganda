@@ -6,107 +6,89 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background:#f8fafc; }
+    body { font-family: Arial,sans-serif; margin:20px; background:#f8fafc; }
+    .card { background:#fff; padding:20px; border-radius:16px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
     h2 { color:#1e293b; }
-    .card { background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+    input, textarea { width:100%; padding:8px; margin:6px 0; border-radius:6px; border:1px solid #ddd; }
     .btn { background:#1d4ed8; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; }
     .btn:hover { background:#1e40af; }
     .progress-entry { background:#f1f5f9; padding:6px; border-radius:6px; margin:4px 0; display:flex; justify-content:space-between; }
-    .progress-actions button { margin-left:6px; background:#64748b; }
-    .progress-actions button:hover { background:#475569; }
   </style>
 </head>
 <body>
-  <h2>Member Dashboard</h2>
-  <div class="card">
-    <h3>Profile</h3>
-    <p><strong>Name:</strong> <span id="profileName"></span></p>
-    <p><strong>Email:</strong> <span id="profileEmail"></span></p>
-    <p><strong>Member ID:</strong> <span id="profileId"></span></p>
-    <p><strong>Upline:</strong> <span id="profileUpline"></span></p>
-  </div>
+<div class="card">
+  <h2>Welcome <span id="memberName"></span></h2>
+  <button class="btn" onclick="logout()">Log Out</button>
+</div>
 
-  <div class="card">
-    <h3>Business Progress</h3>
-    <input id="progressText" placeholder="Enter progress">
-    <button class="btn" onclick="addProgress()">Add</button>
-    <div id="progressList"></div>
-  </div>
+<div class="card">
+  <h3>Add Business Progress</h3>
+  <textarea id="progressText" placeholder="Enter progress"></textarea>
+  <button class="btn" onclick="addProgress()">Add Progress</button>
+</div>
 
-  <button class="btn" onclick="logout()">Logout</button>
+<div class="card">
+  <h3>Your Business Progress</h3>
+  <div id="progressList"></div>
+</div>
 
 <script>
-  // Firebase setup
-  const firebaseConfig = { 
-    apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
-    authDomain:"lita-platform-bffdc.firebaseapp.com", 
-    projectId:"lita-platform-bffdc", 
-    storageBucket:"lita-platform-bffdc.firebasestorage.app", 
-    messagingSenderId:"387943226211", 
-    appId:"1:387943226211:web:0127c409e0f880df391156" 
-  };
-  const app = firebase.initializeApp(firebaseConfig, "memberApp");
-  const auth = firebase.auth(app);
-  const db = firebase.firestore(app);
+const firebaseConfig = { 
+  apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
+  authDomain:"lita-platform-bffdc.firebaseapp.com", 
+  projectId:"lita-platform-bffdc", 
+  storageBucket:"lita-platform-bffdc.firebasestorage.app", 
+  messagingSenderId:"387943226211", 
+  appId:"1:387943226211:web:0127c409e0f880df391156" 
+};
+const app = firebase.initializeApp(firebaseConfig,"memberApp");
+const auth = firebase.auth(app);
+const db = firebase.firestore(app);
 
-  // EmailJS init
-  emailjs.init("hZgalRaZwSRy1Zgp4");
+let memberId, memberData;
 
-  let memberDocId;
-  let memberData;
-
-  auth.onAuthStateChanged(async user=>{
-    if(!user){ window.location.href="signin.html"; return; }
-    memberDocId = user.uid;
-    const doc = await db.collection("members").doc(memberDocId).get();
-    if(!doc.exists) { alert("Profile not found"); return; }
-    memberData = doc.data();
-    document.getElementById("profileName").textContent = memberData.fullName;
-    document.getElementById("profileEmail").textContent = memberData.email;
-    document.getElementById("profileId").textContent = memberData.memberId;
-    document.getElementById("profileUpline").textContent = memberData.upline||"-";
-    renderProgress();
-  });
-
-  function renderProgress(){
-    const listDiv = document.getElementById("progressList");
-    listDiv.innerHTML = "";
-    (memberData.businessProgress||[]).forEach((p,i)=>{
-      const div = document.createElement("div");
-      div.className = "progress-entry";
-      div.innerHTML = `${p.text} <div class='progress-actions'><button onclick="editProgress(${i})">✏️</button><button onclick="deleteProgress(${i})">🗑️</button></div>`;
-      listDiv.appendChild(div);
+auth.onAuthStateChanged(user=>{
+  if(user){
+    db.collection("members").doc(user.uid).get().then(doc=>{
+      if(!doc.exists){ alert("Profile not found"); auth.signOut(); window.location.href="signin.html"; return; }
+      memberData = doc.data();
+      memberId = doc.id;
+      document.getElementById("memberName").textContent = memberData.fullName;
+      renderProgress();
     });
-  }
+  } else { window.location.href="signin.html"; }
+});
 
-  async function addProgress(){
-    const txt = document.getElementById("progressText").value.trim();
-    if(!txt) return;
-    memberData.businessProgress = memberData.businessProgress||[];
-    memberData.businessProgress.push({text:txt,date:new Date()});
-    await db.collection("members").doc(memberDocId).update({businessProgress:memberData.businessProgress});
-    document.getElementById("progressText").value="";
-    renderProgress();
-  }
+function renderProgress(){
+  const div = document.getElementById("progressList");
+  div.innerHTML="";
+  (memberData.businessProgress||[]).forEach((p,i)=>{
+    const e = document.createElement("div");
+    e.className="progress-entry";
+    e.innerHTML=`${p.text} <button onclick="deleteProgress(${i})">🗑️</button>`;
+    div.appendChild(e);
+  });
+}
 
-  async function editProgress(idx){
-    const newText = prompt("Edit progress:",memberData.businessProgress[idx].text);
-    if(!newText) return;
-    memberData.businessProgress[idx].text=newText;
-    await db.collection("members").doc(memberDocId).update({businessProgress:memberData.businessProgress});
-    renderProgress();
-  }
+function addProgress(){
+  const text = document.getElementById("progressText").value.trim();
+  if(!text) return alert("Enter progress");
+  memberData.businessProgress = memberData.businessProgress||[];
+  memberData.businessProgress.push({text, date:new Date()});
+  db.collection("members").doc(memberId).update({businessProgress:memberData.businessProgress})
+    .then(()=>{ document.getElementById("progressText").value=""; renderProgress(); });
+}
 
-  async function deleteProgress(idx){
-    if(!confirm("Delete this progress?")) return;
+function deleteProgress(idx){
+  if(confirm("Delete this progress?")){
     memberData.businessProgress.splice(idx,1);
-    await db.collection("members").doc(memberDocId).update({businessProgress:memberData.businessProgress});
-    renderProgress();
+    db.collection("members").doc(memberId).update({businessProgress:memberData.businessProgress})
+      .then(()=> renderProgress());
   }
+}
 
-  function logout(){ auth.signOut().then(()=> window.location.href="signin.html"); }
+function logout(){ auth.signOut().then(()=>window.location.href="signin.html"); }
 </script>
 </body>
 </html>
