@@ -10,11 +10,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background:#f8fafc; }
+    body { font-family: Arial, sans-serif; margin:20px; background:#f8fafc; }
     h2 { color:#1e293b; }
     .card { background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
     .btn { background:#1d4ed8; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; }
     .btn:hover { background:#1e40af; }
+    input { margin:6px 0; padding:8px; border-radius:6px; border:1px solid #ddd; width:calc(33% - 12px); margin-right:6px; }
     table { width:100%; border-collapse:collapse; margin-top:10px; }
     th,td { border:1px solid #ddd; padding:8px; text-align:left; }
     th { background:#e2e8f0; }
@@ -25,161 +26,164 @@
     .progress-entry { background:#f1f5f9; padding:6px; border-radius:6px; margin:4px 0; display:flex; justify-content:space-between; }
     .progress-actions button { margin-left:6px; background:#64748b; }
     .progress-actions button:hover { background:#475569; }
+    .msg { margin-top:8px; }
+    .msg.ok { color:green; }
+    .msg.err { color:red; }
   </style>
 </head>
 <body>
-  <h2>Admin Dashboard</h2>
+<h2>Admin Dashboard</h2>
 
-  <div class="card">
-    <h3>Register Member</h3>
-    <input id="fullName" placeholder="Full Name"> 
-    <input id="email" placeholder="Email"> 
-    <input id="upline" placeholder="Upline ID">
-    <button class="btn" onclick="registerMember()">Register</button>
-  </div>
+<div class="card">
+  <h3>Register Member</h3>
+  <input id="newFullName" placeholder="Full Name">
+  <input id="newEmail" placeholder="Email">
+  <input id="newUpline" placeholder="Upline ID">
+  <button class="btn" onclick="registerMember()">Register</button>
+  <div class="msg" id="registerMsg"></div>
+</div>
 
-  <div class="card">
-    <h3>Members List</h3>
-    <input id="searchBox" placeholder="Search..." oninput="renderMembers()">
-    <button class="btn" onclick="exportCSV()">Export CSV</button>
-    <button class="btn" onclick="exportPDF()">Export PDF</button>
-    <table id="membersTable">
-      <thead>
-        <tr>
-          <th>Name</th><th>Email</th><th>Member ID</th><th>Upline</th><th>Progress</th><th>Actions</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+<div class="card">
+  <h3>Members List</h3>
+  <input id="searchBox" placeholder="Search..." oninput="renderMembers()">
+  <button class="btn" onclick="exportCSV()">Export CSV</button>
+  <button class="btn" onclick="exportPDF()">Export PDF</button>
+  <table id="membersTable">
+    <thead>
+      <tr><th>Name</th><th>Email</th><th>Member ID</th><th>Upline</th><th>Progress</th><th>Actions</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
-  <div class="card">
-    <h3>Members Tree</h3>
-    <ul class="tree" id="treeRoot"></ul>
-  </div>
+<div class="card">
+  <h3>Members Tree</h3>
+  <ul class="tree" id="treeRoot"></ul>
+</div>
 
 <script>
-  // Firebase setup
-  const firebaseConfig = { 
-    apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
-    authDomain:"lita-platform-bffdc.firebaseapp.com", 
-    projectId:"lita-platform-bffdc", 
-    storageBucket:"lita-platform-bffdc.firebasestorage.app", 
-    messagingSenderId:"387943226211", 
-    appId:"1:387943226211:web:0127c409e0f880df391156" 
-  };
-  const app = firebase.initializeApp(firebaseConfig, "adminApp");
-  const auth = firebase.auth(app);
-  const db = firebase.firestore(app);
+const firebaseConfig = { 
+  apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
+  authDomain:"lita-platform-bffdc.firebaseapp.com", 
+  projectId:"lita-platform-bffdc", 
+  storageBucket:"lita-platform-bffdc.firebasestorage.app", 
+  messagingSenderId:"387943226211", 
+  appId:"1:387943226211:web:0127c409e0f880df391156" 
+};
+const app = firebase.initializeApp(firebaseConfig,"adminApp");
+const auth = firebase.auth(app);
+const db = firebase.firestore(app);
 
-  // Initialize EmailJS
-  emailjs.init("hZgalRaZwSRy1Zgp4");
+emailjs.init("hZgalRaZwSRy1Zgp4");
 
-  let members = [];
+let members=[];
 
-  async function registerMember(){
-    const fullName=document.getElementById("fullName").value.trim();
-    const email=document.getElementById("email").value.trim();
-    const upline=document.getElementById("upline").value.trim();
-    if(!fullName||!email){alert("Fill all fields");return;}
-    const memberId="M"+Date.now();
-    const tempPass=Math.random().toString(36).slice(-8);
-    try{
-      const cred=await auth.createUserWithEmailAndPassword(email,tempPass);
-      await db.collection("members").doc(cred.user.uid).set({
-        fullName,email,upline,memberId,photoURL:"",businessProgress:[],createdAt:new Date()
-      });
+async function registerMember(){
+  const fullName=document.getElementById("newFullName").value.trim();
+  const email=document.getElementById("newEmail").value.trim();
+  const upline=document.getElementById("newUpline").value.trim() || "ROOT";
+  const msgDiv = document.getElementById("registerMsg");
+  msgDiv.textContent=""; msgDiv.className="msg";
+  if(!fullName||!email){ msgDiv.textContent="Fill all fields"; msgDiv.classList.add("err"); return; }
 
-      // Send confirmation email with temp password
-      emailjs.send("service_mrqs34o","template_abc123",{to_email:email,fullName,memberId,tempPass});
-      
-      alert("Member registered");
-      fetchMembers();
-    }catch(e){alert(e.message)}
+  const memberId="M"+Date.now();
+  const tempPass=Math.random().toString(36).slice(-8);
+
+  try{
+    const cred = await auth.createUserWithEmailAndPassword(email,tempPass);
+    const uid = cred.user.uid;
+    await db.collection("members").doc(uid).set({
+      fullName, email, upline, memberId, businessProgress: [], createdAt: firebase.firestore.FieldValue.serverTimestamp(), photoURL:""
+    });
+
+    // Email temporary password + confirmation
+    await emailjs.send("service_mrqs34o","template_abc123",{
+      to_email: email,
+      full_name: fullName,
+      member_id: memberId,
+      upline_id: upline,
+      temp_password: tempPass
+    });
+
+    msgDiv.textContent="✅ Member registered and email sent."; msgDiv.classList.add("ok");
+    document.getElementById("newFullName").value="";
+    document.getElementById("newEmail").value="";
+    document.getElementById("newUpline").value="";
+    fetchMembers();
+  }catch(e){
+    msgDiv.textContent="❌ "+e.message; msgDiv.classList.add("err");
   }
+}
 
-  async function fetchMembers(){
-    const snap=await db.collection("members").get();
-    members=snap.docs.map(d=>({id:d.id,...d.data()}));
-    renderMembers();
-    buildTree();
+// Fetch all members
+async function fetchMembers(){
+  const snap=await db.collection("members").get();
+  members=snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderMembers();
+  buildTree();
+}
+
+function renderMembers(){
+  const q=document.getElementById("searchBox").value.toLowerCase();
+  const tbody=document.querySelector("#membersTable tbody");
+  tbody.innerHTML="";
+  members.filter(m=>m.fullName.toLowerCase().includes(q)||m.email.toLowerCase().includes(q)||m.memberId.toLowerCase().includes(q)).forEach(m=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${m.fullName}</td><td>${m.email}</td><td>${m.memberId}</td><td>${m.upline||"-"}</td>
+    <td>${(m.businessProgress||[]).map((p,i)=>`<div class='progress-entry'>${p.text} <div class='progress-actions'><button onclick="editProgress('${m.id}',${i})">✏️</button><button onclick="deleteProgress('${m.id}',${i})">🗑️</button></div></div>`).join("")}</td>
+    <td><button class='btn' onclick="deleteMember('${m.id}')">Delete</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// Edit/Delete progress
+async function editProgress(memberId,idx){
+  const m=members.find(x=>x.id===memberId);
+  const newText=prompt("Edit progress:",m.businessProgress[idx].text);
+  if(newText){ m.businessProgress[idx].text=newText; await db.collection("members").doc(memberId).update({businessProgress:m.businessProgress}); fetchMembers(); }
+}
+async function deleteProgress(memberId,idx){
+  const m=members.find(x=>x.id===memberId);
+  if(confirm("Delete this progress?")){ m.businessProgress.splice(idx,1); await db.collection("members").doc(memberId).update({businessProgress:m.businessProgress}); fetchMembers(); }
+}
+
+async function deleteMember(id){
+  if(confirm("Delete member?")){ await db.collection("members").doc(id).delete(); fetchMembers(); }
+}
+
+// Export CSV/PDF
+function exportCSV(){
+  let csv="Name,Email,Member ID,Upline\n";
+  members.forEach(m=>{csv+=`${m.fullName},${m.email},${m.memberId},${m.upline||"-"}\n`;});
+  const blob=new Blob([csv],{type:"text/csv"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="members.csv"; a.click();
+}
+function exportPDF(){
+  const {jsPDF}=window.jspdf; const doc=new jsPDF();
+  doc.autoTable({head:[['Name','Email','Member ID','Upline']], body:members.map(m=>[m.fullName,m.email,m.memberId,m.upline||"-"])});
+  doc.save("members.pdf");
+}
+
+// Members Tree
+async function buildTree(){
+  const rootEl=document.getElementById("treeRoot"); rootEl.innerHTML="";
+  const map={}; members.forEach(m=>map[m.memberId]={...m,children:[]});
+  Object.values(map).forEach(m=>{ if(m.upline && map[m.upline]) map[m.upline].children.push(m); });
+  Object.values(map).filter(m=>!m.upline||m.upline==="ROOT").forEach(m=>renderTreeNode(m,rootEl));
+}
+function renderTreeNode(node,ul){
+  const li=document.createElement("li");
+  const hasChildren=node.children&&node.children.length>0;
+  li.innerHTML=`<div class='node'><span class='collapse-toggle'>${hasChildren?"-":""}</span><img src='${node.photoURL||"https://via.placeholder.com/28"}'><div><strong>${node.fullName}</strong> <span style='font-size:12px;color:#1d4ed8;'>${node.memberId}</span></div></div>`;
+  if(hasChildren){
+    const sub=document.createElement("ul"); sub.className="tree";
+    node.children.forEach(ch=>renderTreeNode(ch,sub));
+    li.appendChild(sub);
+    li.querySelector(".collapse-toggle").onclick=function(){ sub.style.display=sub.style.display==="none"?"block":"none"; this.textContent=this.textContent==="+"?"-":"+"; };
   }
+  ul.appendChild(li);
+}
 
-  function renderMembers(){
-    const q=document.getElementById("searchBox").value.toLowerCase();
-    const tbody=document.querySelector("#membersTable tbody");
-    tbody.innerHTML="";
-    members.filter(m=>m.fullName.toLowerCase().includes(q)||m.email.toLowerCase().includes(q)||m.memberId.toLowerCase().includes(q))
-      .forEach(m=>{
-        const tr=document.createElement("tr");
-        tr.innerHTML=`<td>${m.fullName}</td><td>${m.email}</td><td>${m.memberId}</td><td>${m.upline||"-"}</td>
-          <td>${m.businessProgress.map((p,i)=>`<div class='progress-entry'>${p.text} <div class='progress-actions'><button onclick="editProgress('${m.id}',${i})">✏️</button><button onclick="deleteProgress('${m.id}',${i})">🗑️</button></div></div>`).join("")}</td>
-          <td><button class='btn' onclick="deleteMember('${m.id}')">Delete</button></td>`;
-        tbody.appendChild(tr);
-      });
-  }
-
-  async function editProgress(memberId,idx){
-    const m=members.find(x=>x.id===memberId);
-    const newText=prompt("Edit progress:",m.businessProgress[idx].text);
-    if(newText){
-      m.businessProgress[idx].text=newText;
-      await db.collection("members").doc(memberId).update({businessProgress:m.businessProgress});
-      fetchMembers();
-    }
-  }
-
-  async function deleteProgress(memberId,idx){
-    const m=members.find(x=>x.id===memberId);
-    if(confirm("Delete this progress?")){
-      m.businessProgress.splice(idx,1);
-      await db.collection("members").doc(memberId).update({businessProgress:m.businessProgress});
-      fetchMembers();
-    }
-  }
-
-  async function deleteMember(id){ if(confirm("Delete member?")){ await db.collection("members").doc(id).delete(); fetchMembers(); } }
-
-  function exportCSV(){
-    let csv="Name,Email,Member ID,Upline\n";
-    members.forEach(m=>{csv+=`${m.fullName},${m.email},${m.memberId},${m.upline||"-"}\n`;});
-    const blob=new Blob([csv],{type:"text/csv"});
-    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="members.csv"; a.click();
-  }
-
-  function exportPDF(){
-    const {jsPDF}=window.jspdf; const doc=new jsPDF();
-    doc.autoTable({head:[['Name','Email','Member ID','Upline']], body:members.map(m=>[m.fullName,m.email,m.memberId,m.upline||"-"])});
-    doc.save("members.pdf");
-  }
-
-  async function fetchChildren(uplineId){
-    const snap=await db.collection("members").where("upline","==",uplineId).get();
-    return snap.docs.map(d=>({id:d.id,...d.data()}));
-  }
-
-  function renderTreeNode(node,ul){
-    const li=document.createElement("li");
-    const hasChildren=node.children&&node.children.length>0;
-    li.innerHTML=`<div class='node'><span class='collapse-toggle'>${hasChildren?"-":""}</span><img src='${node.photoURL||"https://via.placeholder.com/28"}'><div><strong>${node.fullName}</strong> <span style='font-size:12px;color:#1d4ed8;'>${node.memberId}</span></div></div>`;
-    if(hasChildren){
-      const sub=document.createElement("ul"); sub.className="tree";
-      node.children.forEach(ch=>renderTreeNode(ch,sub));
-      li.appendChild(sub);
-      li.querySelector(".collapse-toggle").onclick=function(){ sub.style.display=sub.style.display==="none"?"block":"none"; this.textContent=this.textContent==="+"?"-":"+"; };
-    }
-    ul.appendChild(li);
-  }
-
-  async function buildTree(){
-    const root=document.getElementById("treeRoot"); root.innerHTML="";
-    const snap=await db.collection("members").get();
-    const map={}; snap.forEach(d=>map[d.data().memberId]={...d.data(),children:[]});
-    Object.values(map).forEach(m=>{ if(m.upline&&map[m.upline]) map[m.upline].children.push(m); });
-    Object.values(map).filter(m=>!m.upline).forEach(m=>renderTreeNode(m,root));
-  }
-
-  fetchMembers();
+fetchMembers();
 </script>
 </body>
 </html>
