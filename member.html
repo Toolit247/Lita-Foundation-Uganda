@@ -27,10 +27,18 @@
     .avatar{width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
     ul.tree, ul.tree ul{list-style:none;margin-left:0;padding-left:18px}
     ul.tree li{margin:6px 0}
-    .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03)}
+    .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03);cursor:pointer}
     .node img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
     table{width:100%;border-collapse:collapse}
     td{padding:8px;border-bottom:1px solid var(--border)}
+    .tag{margin-left:6px;color:#1d4ed8;background:#eef2ff;padding:0 6px;border-radius:999px}
+    .item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#fff;margin:8px 0}
+    .muted{color:#6b7280;font-size:12px}
+    .btn.small{padding:6px 8px;border-radius:8px}
+    .btn.warn{background:#f59e0b;color:#fff;border:1px solid #f59e0b}
+    .btn.danger{background:#dc2626;color:#fff;border:1px solid #dc2626}
+    .caret{display:inline-block;transform:rotate(90deg);transition:.15s; font-size:12px; color:#6b7280; margin-right:6px}
+    .collapsed .caret{transform:rotate(0deg)}
   </style>
 </head>
 <body>
@@ -67,15 +75,16 @@
     <div id="updateMessage" class="msg"></div>
   </section>
 
-  <!-- Progress history -->
+  <!-- Progress history (editable) -->
   <section class="card" style="margin-top:14px">
     <h3>Progress History</h3>
-    <ul id="progressHistory"></ul>
+    <div id="progressHistory"></div>
   </section>
 
   <!-- Downline tree -->
   <section class="card" style="margin-top:14px">
     <h3>Your Downline</h3>
+    <p class="muted" style="margin:6px 0 10px">Click a node to expand/collapse.</p>
     <ul id="treeRoot" class="tree"></ul>
   </section>
 </div>
@@ -111,7 +120,7 @@
     const d = doc.data();
     myMemberId = d.memberId || "";
     renderProfile(d);
-    loadProgressHistory();
+    await loadProgressHistory();
     buildAndRenderTree();
   });
 
@@ -161,7 +170,9 @@
     const updateMsg = document.getElementById("updateMessage");
     updateMsg.textContent=""; updateMsg.className="msg";
     try{
+      // Set current progress on profile
       await memberDocRef.update({ businessProgress: progress });
+      // Add to history
       await memberDocRef.collection("progressHistory").add({
         progress,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -169,7 +180,7 @@
       document.getElementById("businessProgress").value="";
       updateMsg.textContent="✅ Progress updated.";
       updateMsg.classList.add("ok");
-      loadProgressHistory();
+      await loadProgressHistory();
       const d = (await memberDocRef.get()).data();
       renderProfile(d);
     }catch(e){
@@ -178,20 +189,64 @@
     }
   });
 
-  function loadProgressHistory(){
-    memberDocRef.collection("progressHistory").orderBy("timestamp","desc").get()
-      .then(snap=>{
-        const ul = document.getElementById("progressHistory");
-        ul.innerHTML = "";
-        snap.forEach(doc=>{
-          const d = doc.data();
-          const t = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
-          const li = document.createElement("li");
-          li.textContent = `${t} — ${d.progress}`;
-          ul.appendChild(li);
-        });
-      });
+  // Render editable history list
+  async function loadProgressHistory(){
+    const snap = await memberDocRef.collection("progressHistory").orderBy("timestamp","desc").get();
+    const container = document.getElementById("progressHistory");
+    container.innerHTML = "";
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const time = (d.timestamp && d.timestamp.toDate) ? d.timestamp.toDate().toLocaleString() : "—";
+      const row = document.createElement("div");
+      row.className = "item";
+      row.innerHTML = `
+        <div>
+          <div><strong>${(d.progress||"")}</strong></div>
+          <div class="muted">${time}</div>
+        </div>
+        <div class="row">
+          <button class="btn small warn" data-edit="${doc.id}">Edit</button>
+          <button class="btn small danger" data-del="${doc.id}">Delete</button>
+        </div>
+      `;
+      container.appendChild(row);
+    });
   }
+
+  // Edit/Delete handlers for history
+  document.getElementById("progressHistory").addEventListener("click", async (e)=>{
+    const delId = e.target.getAttribute("data-del");
+    const editId = e.target.getAttribute("data-edit");
+
+    async function recomputeLatestToProfile(){
+      const q = await memberDocRef.collection("progressHistory").orderBy("timestamp","desc").limit(1).get();
+      const latest = q.empty ? "" : (q.docs[0].data().progress||"");
+      await memberDocRef.update({ businessProgress: latest });
+      const d = (await memberDocRef.get()).data();
+      renderProfile(d);
+    }
+
+    if(delId){
+      if(!confirm("Delete this progress entry?")) return;
+      try{
+        await memberDocRef.collection("progressHistory").doc(delId).delete();
+        await recomputeLatestToProfile();
+        await loadProgressHistory();
+      }catch(err){ alert(err.message); }
+    }
+
+    if(editId){
+      const curSnap = await memberDocRef.collection("progressHistory").doc(editId).get();
+      const cur = (curSnap.exists && curSnap.data().progress) ? curSnap.data().progress : "";
+      const newVal = prompt("Update progress:", cur);
+      if(!newVal || !newVal.trim()) return;
+      try{
+        await memberDocRef.collection("progressHistory").doc(editId).update({ progress:newVal.trim() });
+        await recomputeLatestToProfile();
+        await loadProgressHistory();
+      }catch(err){ alert(err.message); }
+    }
+  });
 
   // Password reset (sends email to logged-in member)
   document.getElementById("resetPwd").addEventListener("click", async ()=>{
@@ -208,7 +263,7 @@
     firebase.auth().signOut().then(()=> window.location.href="signin.html");
   });
 
-  // -------- Downline tree (based on your Member ID as upline) --------
+  // -------- Downline tree (based on your Member ID as upline) with collapse --------
   async function fetchChildren(uplineId) {
     const snap = await db.collection("members").where("upline","==",uplineId).get();
     const res = [];
@@ -227,26 +282,42 @@
 
   function renderTreeNode(node, ul) {
     const li = document.createElement("li");
+    li.className = "collapsed";
     const img = node.photoURL || "https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(node.fullName||"LITA");
-    li.innerHTML = `
-      <div class="node">
-        <img src="${img}" alt="">
-        <div><strong>${node.fullName}</strong> <span style="margin-left:6px;color:#1d4ed8;background:#eef2ff;padding:0 6px;border-radius:999px">${node.memberId}</span></div>
-      </div>
+    const nodeDiv = document.createElement("div");
+    nodeDiv.className = "node";
+    nodeDiv.innerHTML = `
+      <span class="caret">▶</span>
+      <img src="${img}" alt="">
+      <div><strong>${node.fullName}</strong> <span class="tag">${node.memberId}</span></div>
     `;
+    li.appendChild(nodeDiv);
+
+    let sub = null;
     if (node.children && node.children.length) {
-      const sub = document.createElement("ul"); sub.className="tree";
+      sub = document.createElement("ul");
+      sub.className="tree";
       node.children.forEach(ch => renderTreeNode(ch, sub));
+      sub.style.display = "none"; // start collapsed
       li.appendChild(sub);
     }
+
+    nodeDiv.addEventListener("click", ()=>{
+      if(!sub) return;
+      const isHidden = sub.style.display === "none";
+      sub.style.display = isHidden ? "block" : "none";
+      li.classList.toggle("collapsed", !isHidden);
+    });
+
     ul.appendChild(li);
   }
 
   async function buildAndRenderTree(){
-    if(!myMemberId) { document.getElementById("treeRoot").innerHTML = "<li>No Member ID found.</li>"; return; }
     const rootEl = document.getElementById("treeRoot");
     rootEl.innerHTML = "";
-    const root = { fullName:"Me", memberId: myMemberId, photoURL: (await memberDocRef.get()).data().photoURL||"", children: await fetchChildren(myMemberId) };
+    if(!myMemberId) { rootEl.innerHTML = "<li>No Member ID found.</li>"; return; }
+    const profile = (await memberDocRef.get()).data();
+    const root = { fullName: "Me", memberId: myMemberId, photoURL: profile.photoURL||"", children: await fetchChildren(myMemberId) };
     renderTreeNode(root, rootEl);
   }
 </script>
