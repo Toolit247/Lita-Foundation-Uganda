@@ -6,145 +6,107 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin:20px; background:#f8fafc; }
+    body { font-family: Arial, sans-serif; margin: 20px; background:#f8fafc; }
     h2 { color:#1e293b; }
     .card { background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
-    .btn { background:#1d4ed8; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+    .btn { background:#1d4ed8; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; }
     .btn:hover { background:#1e40af; }
     .progress-entry { background:#f1f5f9; padding:6px; border-radius:6px; margin:4px 0; display:flex; justify-content:space-between; }
-    .progress-actions button { margin-left:6px; background:#64748b; color:#fff; border:none; border-radius:4px; padding:4px 8px; }
+    .progress-actions button { margin-left:6px; background:#64748b; }
     .progress-actions button:hover { background:#475569; }
-    .tree ul { list-style:none; padding-left:20px; }
-    .node { display:flex; align-items:center; cursor:pointer; }
-    .node img { width:28px; height:28px; border-radius:50%; margin-right:8px; }
-    .collapse-toggle { margin-right:6px; cursor:pointer; font-weight:bold; color:#1d4ed8; }
   </style>
 </head>
 <body>
   <h2>Member Dashboard</h2>
-  <button class="btn" onclick="logout()">Logout</button>
-
   <div class="card">
-    <h3>My Profile</h3>
-    <div id="profileBox"></div>
+    <h3>Profile</h3>
+    <p><strong>Name:</strong> <span id="profileName"></span></p>
+    <p><strong>Email:</strong> <span id="profileEmail"></span></p>
+    <p><strong>Member ID:</strong> <span id="profileId"></span></p>
+    <p><strong>Upline:</strong> <span id="profileUpline"></span></p>
   </div>
 
   <div class="card">
-    <h3>My Progress</h3>
-    <input id="newProgress" placeholder="Enter new progress...">
+    <h3>Business Progress</h3>
+    <input id="progressText" placeholder="Enter progress">
     <button class="btn" onclick="addProgress()">Add</button>
     <div id="progressList"></div>
   </div>
 
-  <div class="card">
-    <h3>My Downline</h3>
-    <ul class="tree" id="downlineTree"></ul>
-  </div>
+  <button class="btn" onclick="logout()">Logout</button>
 
 <script>
-const firebaseConfig = { 
-  apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
-  authDomain:"lita-platform-bffdc.firebaseapp.com", 
-  projectId:"lita-platform-bffdc", 
-  storageBucket:"lita-platform-bffdc.appspot.com", 
-  messagingSenderId:"387943226211", 
-  appId:"1:387943226211:web:0127c409e0f880df391156" 
-};
-const app = firebase.initializeApp(firebaseConfig, "memberApp");
-const auth = firebase.auth(app);
-const db = firebase.firestore(app);
-
-let currentUser = null;
-let currentProfile = null;
-
-auth.onAuthStateChanged(async user=>{
-  if(!user){ window.location.href="signin.html"; return; }
-  currentUser = user;
-  const doc = await db.collection("members").doc(user.uid).get();
-  currentProfile = { id:doc.id, ...doc.data() };
-  renderProfile();
-  renderProgress();
-  buildDownline();
-});
-
-function renderProfile(){
-  document.getElementById("profileBox").innerHTML = `
-    <p><strong>Name:</strong> ${currentProfile.fullName}</p>
-    <p><strong>Email:</strong> ${currentProfile.email}</p>
-    <p><strong>Member ID:</strong> ${currentProfile.memberId}</p>
-    <p><strong>Upline:</strong> ${currentProfile.upline||"-"}</p>
-  `;
-}
-
-function renderProgress(){
-  const list=document.getElementById("progressList"); list.innerHTML="";
-  (currentProfile.businessProgress||[]).forEach((p,i)=>{
-    const div=document.createElement("div");
-    div.className="progress-entry";
-    div.innerHTML=`${p.text}<div class="progress-actions">
-      <button onclick="editProgress(${i})">✏️</button>
-      <button onclick="deleteProgress(${i})">🗑️</button>
-    </div>`;
-    list.appendChild(div);
-  });
-}
-
-async function addProgress(){
-  const text=document.getElementById("newProgress").value.trim();
-  if(!text) return;
-  const updated=[...(currentProfile.businessProgress||[]),{text}];
-  await db.collection("members").doc(currentProfile.id).update({businessProgress:updated});
-  currentProfile.businessProgress=updated;
-  document.getElementById("newProgress").value="";
-  renderProgress();
-}
-
-async function editProgress(idx){
-  const newText=prompt("Edit progress:",currentProfile.businessProgress[idx].text);
-  if(newText){
-    currentProfile.businessProgress[idx].text=newText;
-    await db.collection("members").doc(currentProfile.id).update({businessProgress:currentProfile.businessProgress});
-    renderProgress();
-  }
-}
-
-async function deleteProgress(idx){
-  if(confirm("Delete this progress?")){
-    currentProfile.businessProgress.splice(idx,1);
-    await db.collection("members").doc(currentProfile.id).update({businessProgress:currentProfile.businessProgress});
-    renderProgress();
-  }
-}
-
-async function fetchChildren(uplineId){
-  const snap=await db.collection("members").where("upline","==",uplineId).get();
-  return snap.docs.map(d=>({id:d.id,...d.data()}));
-}
-
-async function buildDownline(){
-  const root=document.getElementById("downlineTree"); root.innerHTML="";
-  const children=await fetchChildren(currentProfile.memberId);
-  children.forEach(c=>renderTreeNode(c,root));
-}
-
-function renderTreeNode(node,ul){
-  const li=document.createElement("li");
-  li.innerHTML=`<div class='node'>
-    <span class='collapse-toggle'>+</span>
-    <img src='${node.photoURL||"https://via.placeholder.com/28"}'>
-    <div><strong>${node.fullName}</strong> <span style='font-size:12px;color:#1d4ed8;'>${node.memberId}</span></div>
-  </div>`;
-  const sub=document.createElement("ul"); sub.className="tree"; sub.style.display="none"; li.appendChild(sub);
-  li.querySelector(".collapse-toggle").onclick=async function(){
-    if(sub.childElementCount===0){ (await fetchChildren(node.memberId)).forEach(ch=>renderTreeNode(ch,sub)); }
-    sub.style.display=sub.style.display==="none"?"block":"none";
-    this.textContent=this.textContent==="+"?"-":"+"; 
+  // Firebase setup
+  const firebaseConfig = { 
+    apiKey:"AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk", 
+    authDomain:"lita-platform-bffdc.firebaseapp.com", 
+    projectId:"lita-platform-bffdc", 
+    storageBucket:"lita-platform-bffdc.firebasestorage.app", 
+    messagingSenderId:"387943226211", 
+    appId:"1:387943226211:web:0127c409e0f880df391156" 
   };
-  ul.appendChild(li);
-}
+  const app = firebase.initializeApp(firebaseConfig, "memberApp");
+  const auth = firebase.auth(app);
+  const db = firebase.firestore(app);
 
-function logout(){ auth.signOut(); }
+  // EmailJS init
+  emailjs.init("hZgalRaZwSRy1Zgp4");
+
+  let memberDocId;
+  let memberData;
+
+  auth.onAuthStateChanged(async user=>{
+    if(!user){ window.location.href="signin.html"; return; }
+    memberDocId = user.uid;
+    const doc = await db.collection("members").doc(memberDocId).get();
+    if(!doc.exists) { alert("Profile not found"); return; }
+    memberData = doc.data();
+    document.getElementById("profileName").textContent = memberData.fullName;
+    document.getElementById("profileEmail").textContent = memberData.email;
+    document.getElementById("profileId").textContent = memberData.memberId;
+    document.getElementById("profileUpline").textContent = memberData.upline||"-";
+    renderProgress();
+  });
+
+  function renderProgress(){
+    const listDiv = document.getElementById("progressList");
+    listDiv.innerHTML = "";
+    (memberData.businessProgress||[]).forEach((p,i)=>{
+      const div = document.createElement("div");
+      div.className = "progress-entry";
+      div.innerHTML = `${p.text} <div class='progress-actions'><button onclick="editProgress(${i})">✏️</button><button onclick="deleteProgress(${i})">🗑️</button></div>`;
+      listDiv.appendChild(div);
+    });
+  }
+
+  async function addProgress(){
+    const txt = document.getElementById("progressText").value.trim();
+    if(!txt) return;
+    memberData.businessProgress = memberData.businessProgress||[];
+    memberData.businessProgress.push({text:txt,date:new Date()});
+    await db.collection("members").doc(memberDocId).update({businessProgress:memberData.businessProgress});
+    document.getElementById("progressText").value="";
+    renderProgress();
+  }
+
+  async function editProgress(idx){
+    const newText = prompt("Edit progress:",memberData.businessProgress[idx].text);
+    if(!newText) return;
+    memberData.businessProgress[idx].text=newText;
+    await db.collection("members").doc(memberDocId).update({businessProgress:memberData.businessProgress});
+    renderProgress();
+  }
+
+  async function deleteProgress(idx){
+    if(!confirm("Delete this progress?")) return;
+    memberData.businessProgress.splice(idx,1);
+    await db.collection("members").doc(memberDocId).update({businessProgress:memberData.businessProgress});
+    renderProgress();
+  }
+
+  function logout(){ auth.signOut().then(()=> window.location.href="signin.html"); }
 </script>
 </body>
 </html>
