@@ -2,57 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LITA Foundation Uganda - Member Dashboard</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Dashboard - LITA Foundation Uganda</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f8f9fa; margin:0; padding:0; }
+    header { background:#2c3e50; color:white; padding:15px; text-align:center; }
+    main { padding:20px; max-width:1000px; margin:auto; }
+    section { background:white; border-radius:10px; padding:20px; margin-bottom:20px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+    h2 { color:#2c3e50; }
+    label { display:block; margin-top:10px; font-weight:bold; }
+    input, textarea, button { width:100%; padding:10px; margin-top:5px; border:1px solid #ccc; border-radius:5px; }
+    button { background:#27ae60; color:white; font-weight:bold; cursor:pointer; }
+    button:hover { background:#219150; }
+    ul { list-style:none; padding-left:20px; }
+    .tree li { margin:5px 0; }
+    .logout-btn { background:#e74c3c; }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center">
-  <div class="w-full max-w-5xl mt-8 p-6 bg-white shadow-md rounded-lg">
-    <h1 class="text-2xl font-bold text-center text-indigo-600 mb-6">Member Dashboard</h1>
-
+<body>
+  <header>
+    <h1>Member Dashboard</h1>
+  </header>
+  <main>
     <!-- Profile Section -->
-    <div class="mb-6">
-      <h2 class="text-lg font-semibold mb-2">Profile</h2>
-      <div class="flex items-center space-x-4">
-        <img id="profilePhoto" class="w-20 h-20 rounded-full border" src="https://via.placeholder.com/100" alt="Profile Photo">
-        <div>
-          <p><strong>Name:</strong> <span id="memberName">Loading...</span></p>
-          <p><strong>Email:</strong> <span id="memberEmail">Loading...</span></p>
-          <button id="resetPasswordBtn" class="mt-2 px-3 py-1 bg-yellow-500 text-white rounded">Reset Password</button>
-        </div>
-      </div>
-    </div>
+    <section>
+      <h2>My Profile</h2>
+      <img id="profile-photo" src="" alt="Profile Photo" width="120" style="border-radius:50%; display:block; margin-bottom:10px;">
+      <input type="file" id="photoUpload">
+      <label>Name:</label>
+      <p id="profile-name"></p>
+      <label>Email:</label>
+      <p id="profile-email"></p>
+    </section>
 
-    <!-- Business Progress Section -->
-    <div class="mb-6">
-      <h2 class="text-lg font-semibold mb-2">Business Progress</h2>
-      <form id="progressForm" class="flex space-x-2 mb-3">
-        <input type="text" id="progressInput" placeholder="Enter progress update" class="flex-grow border rounded p-2">
-        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Add</button>
-      </form>
-      <ul id="progressList" class="list-disc ml-6"></ul>
-    </div>
+    <!-- Change Password -->
+    <section>
+      <h2>Change Password</h2>
+      <label>Current Password</label>
+      <input type="password" id="currentPassword">
+      <label>New Password</label>
+      <input type="password" id="newPassword">
+      <label>Confirm New Password</label>
+      <input type="password" id="confirmPassword">
+      <button onclick="changePassword()">Update Password</button>
+    </section>
 
-    <!-- Downline Tree Section -->
-    <div class="mb-6">
-      <h2 class="text-lg font-semibold mb-2">My Downline</h2>
-      <div id="downlineTree" class="p-4 bg-gray-50 border rounded"></div>
-    </div>
+    <!-- Progress History -->
+    <section>
+      <h2>Business Progress</h2>
+      <textarea id="progressInput" placeholder="Enter your progress update..."></textarea>
+      <button onclick="addProgress()">Add Progress</button>
+      <ul id="progressList"></ul>
+    </section>
 
-    <!-- Logout -->
-    <div class="text-center">
-      <button id="logoutBtn" class="px-4 py-2 bg-red-600 text-white rounded">Logout</button>
-    </div>
-  </div>
+    <!-- Downline Tree -->
+    <section>
+      <h2>My Downline</h2>
+      <ul id="downlineTree" class="tree"></ul>
+    </section>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </main>
 
-    // Firebase config
+  <script>
+    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
       authDomain: "lita-platform-bffdc.firebaseapp.com",
@@ -62,101 +80,115 @@
       appId: "1:387943226211:web:0127c409e0f880df391156",
       measurementId: "G-44JEYP8ZHD"
     };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    let currentUser;
 
-    let currentUserId = null;
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentUser = user;
+      loadProfile();
+      loadProgress();
+      loadDownline(user.uid);
+    });
 
-    // Recursive tree builder
-    async function buildTree(memberId, container) {
-      const docRef = doc(db, "members", memberId);
-      const snap = await getDoc(docRef);
-      if (!snap.exists()) return;
+    // Load Profile
+    async function loadProfile() {
+      document.getElementById("profile-email").innerText = currentUser.email;
+      const snap = await db.collection("members").doc(currentUser.uid).get();
+      if (snap.exists) {
+        const data = snap.data();
+        document.getElementById("profile-name").innerText = data.name || "Not set";
+        if (data.photoURL) document.getElementById("profile-photo").src = data.photoURL;
+      }
+      document.getElementById("photoUpload").addEventListener("change", uploadPhoto);
+    }
 
-      const data = snap.data();
-      const node = document.createElement("div");
-      node.classList.add("ml-4", "mt-2");
-      node.innerHTML = `<strong>${data.name || "Unnamed"}</strong> (${data.memberId || ""})`;
-      container.appendChild(node);
+    async function uploadPhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const ref = storage.ref("profile_photos/" + currentUser.uid);
+      await ref.put(file);
+      const url = await ref.getDownloadURL();
+      await db.collection("members").doc(currentUser.uid).update({ photoURL: url });
+      document.getElementById("profile-photo").src = url;
+    }
 
-      if (data.downlines && Array.isArray(data.downlines)) {
-        for (const childId of data.downlines) {
-          await buildTree(childId, node);
-        }
+    // Change Password
+    async function changePassword() {
+      const currentPass = document.getElementById("currentPassword").value;
+      const newPass = document.getElementById("newPassword").value;
+      const confirmPass = document.getElementById("confirmPassword").value;
+
+      if (newPass !== confirmPass) {
+        alert("Passwords do not match!");
+        return;
+      }
+
+      const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPass);
+      try {
+        await currentUser.reauthenticateWithCredential(credential);
+        await currentUser.updatePassword(newPass);
+        alert("Password updated successfully!");
+      } catch (err) {
+        alert("Error: " + err.message);
       }
     }
 
-    // Listen for auth state
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        document.getElementById("memberEmail").innerText = user.email;
-        currentUserId = user.uid;
-
-        // Load member data
-        const docRef = doc(db, "members", user.uid);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          document.getElementById("memberName").innerText = data.name || "No Name";
-          if (data.photoURL) {
-            document.getElementById("profilePhoto").src = data.photoURL;
-          }
-        }
-
-        // Load progress
-        const progressRef = collection(db, "members", user.uid, "progress");
-        onSnapshot(progressRef, (snapshot) => {
-          const list = document.getElementById("progressList");
-          list.innerHTML = "";
-          snapshot.forEach((docSnap) => {
-            const li = document.createElement("li");
-            li.textContent = docSnap.data().text;
-            const delBtn = document.createElement("button");
-            delBtn.textContent = "❌";
-            delBtn.classList.add("ml-2", "text-red-500");
-            delBtn.onclick = async () => await deleteDoc(doc(db, "members", user.uid, "progress", docSnap.id));
-            li.appendChild(delBtn);
-            list.appendChild(li);
-          });
-        });
-
-        // Build downline tree
-        document.getElementById("downlineTree").innerHTML = "";
-        await buildTree(user.uid, document.getElementById("downlineTree"));
-
-      } else {
-        window.location.href = "index.html";
-      }
-    });
-
-    // Add progress
-    document.getElementById("progressForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const text = document.getElementById("progressInput").value.trim();
-      if (!text || !currentUserId) return;
-      await addDoc(collection(db, "members", currentUserId, "progress"), { text });
+    // Progress History
+    async function addProgress() {
+      const text = document.getElementById("progressInput").value;
+      if (!text) return;
+      await db.collection("progress").add({
+        uid: currentUser.uid,
+        text,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
       document.getElementById("progressInput").value = "";
-    });
+      loadProgress();
+    }
 
-    // Reset password
-    document.getElementById("resetPasswordBtn").addEventListener("click", async () => {
-      const user = auth.currentUser;
-      if (user && user.email) {
-        try {
-          await sendPasswordResetEmail(auth, user.email);
-          alert("Password reset email sent to " + user.email);
-        } catch (err) {
-          alert("Error sending reset email: " + err.message);
-        }
-      }
-    });
+    async function loadProgress() {
+      const list = document.getElementById("progressList");
+      list.innerHTML = "";
+      const snap = await db.collection("progress").where("uid","==",currentUser.uid).orderBy("timestamp","desc").get();
+      snap.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = doc.data().text;
+        const del = document.createElement("button");
+        del.textContent = "Delete";
+        del.onclick = async () => {
+          await db.collection("progress").doc(doc.id).delete();
+          loadProgress();
+        };
+        li.appendChild(del);
+        list.appendChild(li);
+      });
+    }
+
+    // Recursive Downline
+    async function loadDownline(uid, element=document.getElementById("downlineTree")) {
+      const snap = await db.collection("members").where("sponsor","==",uid).get();
+      snap.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = doc.data().name || "Unnamed";
+        const childUl = document.createElement("ul");
+        li.appendChild(childUl);
+        element.appendChild(li);
+        loadDownline(doc.id, childUl);
+      });
+    }
 
     // Logout
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-      await signOut(auth);
-    });
+    function logout() {
+      auth.signOut();
+    }
   </script>
 </body>
 </html>
