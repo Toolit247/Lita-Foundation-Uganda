@@ -19,10 +19,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
   <style>
-    :root{--bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--brand:#2563eb;--brand2:#1d4ed8;--border:#e5e7eb;--ok:#16a34a;--err:#dc2626}
+    :root{
+      --bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--brand:#2563eb;--brand2:#1d4ed8;--border:#e5e7eb;--ok:#16a34a;--err:#dc2626
+    }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;color:var(--text)}
-    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border)}
+    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
     .container{max-width:1150px;margin:18px auto;padding:0 14px}
     h2,h3{margin:0 0 10px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.03)}
@@ -49,7 +51,6 @@
     ul.tree li{margin:6px 0}
     .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03)}
     .node img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
-    .toggle{cursor:pointer;font-weight:700;color:#1d4ed8;margin-right:6px}
   </style>
 </head>
 <body>
@@ -67,6 +68,7 @@
   <!-- Register Member -->
   <section class="card">
     <h3>Register New Member</h3>
+    <p style="color:#6b7280;font-size:13px;margin-bottom:8px">Admin-only. Creates an Auth account with a temporary password and sends details via EmailJS.</p>
     <form id="addMemberForm" class="grid">
       <div class="row">
         <input type="text" id="newFullName" placeholder="Full Name" required />
@@ -97,10 +99,11 @@
   <!-- Member Tree -->
   <section class="card">
     <h3>Member Tree</h3>
+    <p style="color:#6b7280;font-size:13px;margin:6px 0 10px">Built from Upline Member IDs. Root = <code>ROOT</code>.</p>
     <ul id="treeRoot" class="tree"></ul>
   </section>
 
-  <!-- Members table -->
+  <!-- Members Table -->
   <section class="card" style="grid-column:1/-1">
     <h3>Registered Members</h3>
     <div class="table-wrap">
@@ -116,6 +119,7 @@
             <th>Location</th>
             <th>Upline</th>
             <th>Progress</th>
+            <th>History</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -126,6 +130,7 @@
 </div>
 
 <script>
+  // --- Firebase config (v8) ---
   var firebaseConfig = {
     apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
     authDomain: "lita-platform-bffdc.firebaseapp.com",
@@ -142,32 +147,38 @@
     ? firebase.initializeApp(firebaseConfig, "secondary")
     : firebase.app("secondary");
 
-  emailjs.init('hZgalRaZwSRy1Zgp4');
+  // EmailJS
+  emailjs.init('hZgalRaZwSRy1Zgp4'); // your public key
 
-  // Auth guard
+  // Route guard
   firebase.auth().onAuthStateChanged(user => {
-    if(!user || user.email!=="toolitambrosehenry@gmail.com") window.location.href="signin.html";
-    else { loadMembers(); buildAndRenderTree(); }
+    if (!user || user.email !== "toolitambrosehenry@gmail.com") {
+      window.location.href = "signin.html";
+    } else {
+      loadMembers();
+      buildAndRenderTree();
+    }
   });
 
-  // Load members + search
+  // --- Load Members Table ---
   let unsubMembers = null;
-  function loadMembers(){
-    if(unsubMembers) unsubMembers();
-    unsubMembers = db.collection("members").orderBy("createdAt","desc").onSnapshot(snap=>{
-      renderTable(snap.docs);
-    });
+  function loadMembers() {
+    if (unsubMembers) unsubMembers();
+    unsubMembers = db.collection("members").orderBy("createdAt","desc")
+      .onSnapshot(snap => renderTable(snap.docs));
   }
 
-  function renderTable(docs){
-    const q = (document.getElementById('searchInput').value||'').toLowerCase();
+  function renderTable(docs) {
+    const q = (document.getElementById('searchInput').value || '').toLowerCase();
     const tbody = document.querySelector("#membersTable tbody");
     tbody.innerHTML = "";
-    docs.forEach(doc=>{
+    docs.forEach(doc => {
       const d = doc.data();
-      const hay = [d.fullName,d.email,d.phone,d.gender,d.location,d.upline,d.memberId].map(x=>(x||'').toLowerCase()).join(' ');
-      if(q && !hay.includes(q)) return;
-      const img = d.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name="+encodeURIComponent(d.fullName||'LITA'));
+      const hay = [d.fullName,d.email,d.phone,d.gender,d.location,d.upline,d.memberId]
+        .map(x => (x||'').toString().toLowerCase()).join(' ');
+      if (q && !hay.includes(q)) return;
+
+      const img = d.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(d.fullName||'LITA'));
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><img class="avatar" src="${img}" alt=""></td>
@@ -179,135 +190,211 @@
         <td>${d.location||''}</td>
         <td>${d.upline||''}</td>
         <td>${d.businessProgress||'N/A'}</td>
+        <td><button class="btn secondary" data-view="${doc.id}">View</button></td>
         <td>
-          <button class="btn secondary" data-edit="${doc.id}">Edit</button>
-          <button class="btn danger" data-del="${doc.id}">Delete</button>
+          <button class="btn secondary" data-edit="${doc.id}">Edit ID</button>
+          <button class="btn danger" data-del="${doc.id}" title="Deletes Firestore profile only">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  document.getElementById("searchInput").addEventListener("input",()=>loadMembers());
+  document.getElementById("searchInput").addEventListener("input", () => loadMembers());
 
-  // Table actions: edit/delete
-  document.getElementById("membersTable").addEventListener("click", async (e)=>{
+  // --- Delegated table actions ---
+  document.getElementById("membersTable").addEventListener("click", async (e) => {
+    const vid = e.target.getAttribute("data-view");
     const eid = e.target.getAttribute("data-edit");
     const did = e.target.getAttribute("data-del");
-    if(eid){
-      const newId = prompt("Enter new Member ID:");
-      if(newId) await db.collection("members").doc(eid).update({memberId:newId});
-    }
-    if(did && confirm("Delete this member (Firestore only)?")) {
-      try { await db.collection("members").doc(did).delete(); buildAndRenderTree(); }
-      catch(e){ alert(e.message); }
-    }
+    if (vid) viewHistory(vid);
+    if (eid) editMemberId(eid);
+    if (did) deleteMember(did);
   });
 
-  // Register member
-  document.getElementById("addMemberForm").addEventListener("submit", async e=>{
-    e.preventDefault();
-    const msg = document.getElementById("addMemberMessage"); msg.textContent="";
-    const newMember = {
-      fullName: document.getElementById("newFullName").value.trim(),
-      email: document.getElementById("newEmail").value.trim(),
-      phone: document.getElementById("newPhone").value.trim(),
-      gender: document.getElementById("newGender").value,
-      location: document.getElementById("newLocation").value.trim(),
-      upline: document.getElementById("newUpline").value.trim()||'ROOT',
-      memberId: document.getElementById("newMemberId").value.trim(),
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      businessProgress:'',
-      photoURL:''
-    };
-    const tempPassword = document.getElementById("newPassword").value;
-    try{
-      await secondary.auth().createUserWithEmailAndPassword(newMember.email,tempPassword);
-      const uid = secondary.auth().currentUser.uid;
-      await db.collection("members").doc(uid).set(newMember);
-      await secondary.auth().currentUser.delete(); // remove secondary app user
-      msg.textContent="✅ Member registered successfully.";
-      msg.className="msg ok";
+  // --- View Progress History ---
+  function viewHistory(memberDocId) {
+    const w = window.open("", "Progress History", "width=720,height=540");
+    w.document.write("<h3 style='font-family:Arial'>Progress History</h3><ul id='h' style='font-family:Arial'></ul>");
+    db.collection("members").doc(memberDocId).collection("progressHistory").orderBy("timestamp","desc").get()
+      .then(s => {
+        const list = w.document.getElementById("h");
+        s.forEach(doc => {
+          const d = doc.data();
+          const t = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
+          const li = w.document.createElement("li");
+          li.textContent = `${t} — ${d.progress}`;
+          list.appendChild(li);
+        });
+      });
+  }
 
-      // EmailJS send
-      emailjs.send('service_mrqs34o','template_svacje4',{to_email:newMember.email,to_name:newMember.fullName,temp_password:tempPassword})
-      .catch(console.warn);
+  // --- Edit Member ID ---
+  function editMemberId(memberDocId) {
+    const newId = prompt("Enter Member ID:");
+    if (!newId) return;
+    db.collection("members").doc(memberDocId).update({ memberId:newId })
+      .then(()=> alert("Member ID updated"))
+      .catch(err=> alert("Failed: "+err.message));
+  }
 
-      document.getElementById("addMemberForm").reset();
-      loadMembers();
+  // --- Delete Member ---
+  async function deleteMember(memberDocId) {
+    if (!confirm("Delete this member profile from Firestore? (Auth account remains)")) return;
+    try {
+      await db.collection("members").doc(memberDocId).delete();
+      alert("Deleted profile.");
       buildAndRenderTree();
-    }catch(e){ msg.textContent="❌ "+e.message; msg.className="msg err"; }
+    } catch(e){ alert("Failed: "+e.message); }
+  }
+
+  // --- Register Member with EmailJS ---
+  document.getElementById("addMemberForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("addMemberMessage");
+    msg.textContent = ""; 
+    msg.className = "msg";
+
+    const fullName = document.getElementById("newFullName").value.trim();
+    const email = document.getElementById("newEmail").value.trim();
+    const phone = document.getElementById("newPhone").value.trim();
+    const gender = document.getElementById("newGender").value;
+    const location = document.getElementById("newLocation").value.trim();
+    const upline = (document.getElementById("newUpline").value.trim() || "ROOT");
+    const memberId = document.getElementById("newMemberId").value.trim();
+    const password = document.getElementById("newPassword").value;
+
+    try {
+      const cred = await secondary.auth().createUserWithEmailAndPassword(email, password);
+      const uid = cred.user.uid;
+
+      await db.collection("members").doc(uid).set({
+        fullName,
+        email,
+        phone,
+        gender,
+        location,
+        upline,
+        memberId,
+        businessProgress: "",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      const emailParams = {
+        to_email: email,
+        full_name: fullName,
+        member_id: memberId,
+        upline_id: upline,
+        phone: phone,
+        location: location,
+        temp_password: password
+      };
+
+      emailjs.send('service_mrqs34o', 'template_svacje4', emailParams)
+        .then(response => {
+          console.log('✅ Email sent:', response.status, response.text);
+          msg.textContent = "✅ Member registered and email sent.";
+          msg.classList.add("ok");
+        })
+        .catch(err => {
+          console.error('❌ EmailJS error:', err);
+          msg.textContent = "⚠️ Member registered but email failed. Check console.";
+          msg.classList.add("err");
+        });
+
+      try { await secondary.auth().sendPasswordResetEmail(email); } catch(_) {}
+      await secondary.auth().signOut();
+      e.target.reset();
+      buildAndRenderTree();
+
+    } catch(err){
+      console.error('❌ Registration error:', err);
+      msg.textContent = "❌ " + err.message;
+      msg.classList.add("err");
+    }
   });
 
-  document.getElementById("logout").addEventListener("click",()=>firebase.auth().signOut().then(()=>window.location.href="signin.html"));
+  // --- CSV Export ---
+  document.getElementById("exportCSV").addEventListener("click", async ()=> {
+    const qs = await db.collection("members").get();
+    let csv = "Full Name,Email,Member ID,Phone,Gender,Location,Upline,Business Progress\n";
+    qs.forEach(doc=>{
+      const d = doc.data();
+      const row = [
+        d.fullName||"", d.email||"", d.memberId||"", d.phone||"",
+        d.gender||"", d.location||"", d.upline||"", (d.businessProgress||"N/A").toString().replace(/[\n\r]+/g," ")
+      ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
+      csv += row + "\n";
+    });
+    const uri = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+    const a = document.createElement("a");
+    a.href = uri; a.download = "LITA_Members.csv"; document.body.appendChild(a); a.click(); a.remove();
+  });
 
-  // -------- Recursive Downline tree --------
-  async function fetchChildren(uplineId){
+  // --- PDF Export ---
+  document.getElementById("exportPDF").addEventListener("click", async ()=> {
+    const qs = await db.collection("members").get();
+    const rows = [];
+    qs.forEach(doc=>{
+      const d = doc.data();
+      rows.push([d.fullName||"", d.email||"", d.memberId||"", d.phone||"",
+        d.gender||"", d.location||"", d.upline||"", d.businessProgress||"N/A"
+      ]);
+    });
+    const { jsPDF } = window.jspdf;
+    const docPDF = new jsPDF();
+    docPDF.text("LITA Members", 14, 14);
+    docPDF.autoTable({
+      head:[["Full Name","Email","Member ID","Phone","Gender","Location","Upline","Progress"]],
+      body: rows,
+      startY: 20,
+      styles: { fontSize: 8 }
+    });
+    docPDF.save("LITA_Members.pdf");
+  });
+
+  // --- Logout ---
+  document.getElementById("logout").addEventListener("click", ()=> {
+    firebase.auth().signOut().then(()=> window.location.href="signin.html");
+  });
+
+  // --- Build Recursive Tree ---
+  async function fetchChildren(uplineId) {
     const snap = await db.collection("members").where("upline","==",uplineId).get();
-    const res=[];
-    for(const doc of snap.docs){
+    const res = [];
+    for (const doc of snap.docs) {
       const d = doc.data();
       res.push({
-        id:doc.id,
-        fullName:d.fullName||"",
-        memberId:d.memberId||"",
-        photoURL:d.photoURL||"",
-        children:await fetchChildren(d.memberId||"")
+        id: doc.id,
+        fullName: d.fullName||"",
+        memberId: d.memberId||"",
+        photoURL: d.photoURL||"",
+        children: await fetchChildren(d.memberId||"")
       });
     }
     return res;
   }
 
-  function renderTreeNode(node,ul){
-    const li=document.createElement("li");
-    const hasChildren=node.children && node.children.length>0;
-    const wrapper=document.createElement("div");
-    wrapper.className="node";
-    if(hasChildren){
-      const toggle=document.createElement("span");
-      toggle.textContent="▶"; toggle.className="toggle";
-      wrapper.appendChild(toggle);
-      toggle.addEventListener("click",()=>{ const s=sub.style.display==="none"; sub.style.display=s?"block":"none"; toggle.textContent=s?"▼":"▶"; });
-    } else wrapper.appendChild(document.createElement("span"));
-    const img=document.createElement("img"); img.src=node.photoURL||("https://ui-avatars.com/api/?background=E5E7EB&color=111&name="+encodeURIComponent(node.fullName||"LITA")); wrapper.appendChild(img);
-    const label=document.createElement("div"); label.innerHTML=`<strong>${node.fullName}</strong> <span class="pill">${node.memberId}</span>`; wrapper.appendChild(label);
-    li.appendChild(wrapper);
-    if(hasChildren){
-      const sub=document.createElement("ul"); sub.className="tree"; sub.style.display="none";
-      node.children.forEach(ch=>renderTreeNode(ch,sub));
-      li.appendChild(sub);
+  async function buildAndRenderTree() {
+    const root = document.getElementById("treeRoot");
+    root.innerHTML = "";
+    const tree = await fetchChildren("ROOT");
+
+    function renderNodes(nodes, parent) {
+      nodes.forEach(n=>{
+        const li = document.createElement("li");
+        const img = n.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name="+encodeURIComponent(n.fullName));
+        li.innerHTML = `<div class="node"><img src="${img}"/><span>${n.fullName} <strong>${n.memberId}</strong></span></div>`;
+        parent.appendChild(li);
+        if(n.children.length){
+          const ul = document.createElement("ul");
+          li.appendChild(ul);
+          renderNodes(n.children, ul);
+        }
+      });
     }
-    ul.appendChild(li);
+    renderNodes(tree, root);
   }
-
-  async function buildAndRenderTree(){
-    const target=document.getElementById("treeRoot"); target.innerHTML="";
-    const rootNode={fullName:"ROOT",memberId:"ROOT",photoURL:"",children:await fetchChildren("ROOT")};
-    const ul=document.createElement("ul"); renderTreeNode(rootNode,ul); target.appendChild(ul);
-  }
-
-  // Export CSV
-  document.getElementById("exportCSV").addEventListener("click", async ()=>{
-    const snap = await db.collection("members").get();
-    const rows = snap.docs.map(d=>d.data());
-    const csv = ["Full Name,Email,Member ID,Phone,Gender,Location,Upline,Progress"].concat(
-      rows.map(r=>`"${r.fullName}","${r.email}","${r.memberId}","${r.phone}","${r.gender}","${r.location}","${r.upline}","${r.businessProgress}"`)
-    ).join("\n");
-    const blob = new Blob([csv],{type:"text/csv"});
-    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="members.csv"; a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  // Export PDF
-  document.getElementById("exportPDF").addEventListener("click", async ()=>{
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const snap = await db.collection("members").get();
-    const rows = snap.docs.map(d=>d.data());
-    const body = rows.map(r=>[r.fullName,r.email,r.memberId,r.phone,r.gender,r.location,r.upline,r.businessProgress]);
-    doc.autoTable({head:[["Name","Email","ID","Phone","Gender","Location","Upline","Progress"]],body});
-    doc.save("members.pdf");
-  });
 </script>
 </body>
 </html>
