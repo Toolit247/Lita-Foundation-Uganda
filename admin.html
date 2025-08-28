@@ -22,7 +22,7 @@
     :root{--bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--brand:#2563eb;--brand2:#1d4ed8;--border:#e5e7eb;--ok:#16a34a;--err:#dc2626}
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;color:var(--text)}
-    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border)}
     .container{max-width:1150px;margin:18px auto;padding:0 14px}
     h2,h3{margin:0 0 10px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.03)}
@@ -49,6 +49,7 @@
     ul.tree li{margin:6px 0}
     .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03)}
     .node img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
+    .toggle{cursor:pointer;font-weight:700;color:#1d4ed8;margin-right:6px}
   </style>
 </head>
 <body>
@@ -66,7 +67,6 @@
   <!-- Register Member -->
   <section class="card">
     <h3>Register New Member</h3>
-    <p style="color:#6b7280;font-size:13px;margin-bottom:8px">Creates an Auth account with a temporary password and sends details via EmailJS.</p>
     <form id="addMemberForm" class="grid">
       <div class="row">
         <input type="text" id="newFullName" placeholder="Full Name" required />
@@ -107,9 +107,16 @@
       <table id="membersTable">
         <thead>
           <tr>
-            <th>Photo</th><th>Full Name</th><th>Email</th><th>Member ID</th>
-            <th>Phone</th><th>Gender</th><th>Location</th><th>Upline</th>
-            <th>Progress</th><th>History</th><th>Actions</th>
+            <th>Photo</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Member ID</th>
+            <th>Phone</th>
+            <th>Gender</th>
+            <th>Location</th>
+            <th>Upline</th>
+            <th>Progress</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -119,7 +126,6 @@
 </div>
 
 <script>
-  // Firebase config
   var firebaseConfig = {
     apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
     authDomain: "lita-platform-bffdc.firebaseapp.com",
@@ -130,71 +136,178 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-  const secondary = firebase.initializeApp(firebaseConfig, "secondary");
 
-  // EmailJS
-  emailjs.init("hZgalRaZwSRy1Zgp4");
+  // Secondary app for creating new users
+  const secondary = firebase.apps.length < 2
+    ? firebase.initializeApp(firebaseConfig, "secondary")
+    : firebase.app("secondary");
 
-  // Route guard
+  emailjs.init('hZgalRaZwSRy1Zgp4');
+
+  // Auth guard
   firebase.auth().onAuthStateChanged(user => {
-    if (!user || user.email !== "toolitambrosehenry@gmail.com") {
-      window.location.href = "signin.html";
-    } else {
-      loadMembers();
-      buildAndRenderTree();
+    if(!user || user.email!=="toolitambrosehenry@gmail.com") window.location.href="signin.html";
+    else { loadMembers(); buildAndRenderTree(); }
+  });
+
+  // Load members + search
+  let unsubMembers = null;
+  function loadMembers(){
+    if(unsubMembers) unsubMembers();
+    unsubMembers = db.collection("members").orderBy("createdAt","desc").onSnapshot(snap=>{
+      renderTable(snap.docs);
+    });
+  }
+
+  function renderTable(docs){
+    const q = (document.getElementById('searchInput').value||'').toLowerCase();
+    const tbody = document.querySelector("#membersTable tbody");
+    tbody.innerHTML = "";
+    docs.forEach(doc=>{
+      const d = doc.data();
+      const hay = [d.fullName,d.email,d.phone,d.gender,d.location,d.upline,d.memberId].map(x=>(x||'').toLowerCase()).join(' ');
+      if(q && !hay.includes(q)) return;
+      const img = d.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name="+encodeURIComponent(d.fullName||'LITA'));
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><img class="avatar" src="${img}" alt=""></td>
+        <td>${d.fullName||''}</td>
+        <td>${d.email||''}</td>
+        <td><span class="pill">${d.memberId||'—'}</span></td>
+        <td>${d.phone||''}</td>
+        <td>${d.gender||''}</td>
+        <td>${d.location||''}</td>
+        <td>${d.upline||''}</td>
+        <td>${d.businessProgress||'N/A'}</td>
+        <td>
+          <button class="btn secondary" data-edit="${doc.id}">Edit</button>
+          <button class="btn danger" data-del="${doc.id}">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById("searchInput").addEventListener("input",()=>loadMembers());
+
+  // Table actions: edit/delete
+  document.getElementById("membersTable").addEventListener("click", async (e)=>{
+    const eid = e.target.getAttribute("data-edit");
+    const did = e.target.getAttribute("data-del");
+    if(eid){
+      const newId = prompt("Enter new Member ID:");
+      if(newId) await db.collection("members").doc(eid).update({memberId:newId});
+    }
+    if(did && confirm("Delete this member (Firestore only)?")) {
+      try { await db.collection("members").doc(did).delete(); buildAndRenderTree(); }
+      catch(e){ alert(e.message); }
     }
   });
 
   // Register member
-  document.getElementById("addMemberForm").addEventListener("submit", async (e) => {
+  document.getElementById("addMemberForm").addEventListener("submit", async e=>{
     e.preventDefault();
-    const msg = document.getElementById("addMemberMessage");
-    msg.textContent = ""; msg.className = "msg";
+    const msg = document.getElementById("addMemberMessage"); msg.textContent="";
+    const newMember = {
+      fullName: document.getElementById("newFullName").value.trim(),
+      email: document.getElementById("newEmail").value.trim(),
+      phone: document.getElementById("newPhone").value.trim(),
+      gender: document.getElementById("newGender").value,
+      location: document.getElementById("newLocation").value.trim(),
+      upline: document.getElementById("newUpline").value.trim()||'ROOT',
+      memberId: document.getElementById("newMemberId").value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      businessProgress:'',
+      photoURL:''
+    };
+    const tempPassword = document.getElementById("newPassword").value;
+    try{
+      await secondary.auth().createUserWithEmailAndPassword(newMember.email,tempPassword);
+      const uid = secondary.auth().currentUser.uid;
+      await db.collection("members").doc(uid).set(newMember);
+      await secondary.auth().currentUser.delete(); // remove secondary app user
+      msg.textContent="✅ Member registered successfully.";
+      msg.className="msg ok";
 
-    const fullName = document.getElementById("newFullName").value.trim();
-    const email = document.getElementById("newEmail").value.trim();
-    const phone = document.getElementById("newPhone").value.trim();
-    const gender = document.getElementById("newGender").value;
-    const location = document.getElementById("newLocation").value.trim();
-    const upline = document.getElementById("newUpline").value.trim() || "ROOT";
-    const memberId = document.getElementById("newMemberId").value.trim();
-    const password = document.getElementById("newPassword").value;
+      // EmailJS send
+      emailjs.send('YOUR_SERVICE','YOUR_TEMPLATE',{to_email:newMember.email,to_name:newMember.fullName,temp_password:tempPassword})
+      .catch(console.warn);
 
-    try {
-      // Create Auth user
-      const cred = await secondary.auth().createUserWithEmailAndPassword(email, password);
-      const uid = cred.user.uid;
-
-      // Firestore profile
-      await db.collection("members").doc(uid).set({
-        fullName, email, phone, gender, location, upline, memberId,
-        businessProgress: "",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      // EmailJS send (with temp password)
-      await emailjs.send("service_mrqs34o", "template_svacje4", {
-        to_email: email,
-        full_name: fullName,
-        member_id: memberId,
-        upline_id: upline,
-        phone: phone,
-        location: location,
-        temp_password: password
-      });
-
-      await secondary.auth().signOut();
-      e.target.reset();
-      msg.textContent = "✅ Member registered and email sent.";
-      msg.classList.add("ok");
+      document.getElementById("addMemberForm").reset();
+      loadMembers();
       buildAndRenderTree();
-    } catch(err){
-      msg.textContent = "❌ " + err.message;
-      msg.classList.add("err");
-    }
+    }catch(e){ msg.textContent="❌ "+e.message; msg.className="msg err"; }
   });
 
-  // (other code: loadMembers, renderTable, exports, tree builder — unchanged)
+  document.getElementById("logout").addEventListener("click",()=>firebase.auth().signOut().then(()=>window.location.href="signin.html"));
+
+  // -------- Recursive Downline tree --------
+  async function fetchChildren(uplineId){
+    const snap = await db.collection("members").where("upline","==",uplineId).get();
+    const res=[];
+    for(const doc of snap.docs){
+      const d = doc.data();
+      res.push({
+        id:doc.id,
+        fullName:d.fullName||"",
+        memberId:d.memberId||"",
+        photoURL:d.photoURL||"",
+        children:await fetchChildren(d.memberId||"")
+      });
+    }
+    return res;
+  }
+
+  function renderTreeNode(node,ul){
+    const li=document.createElement("li");
+    const hasChildren=node.children && node.children.length>0;
+    const wrapper=document.createElement("div");
+    wrapper.className="node";
+    if(hasChildren){
+      const toggle=document.createElement("span");
+      toggle.textContent="▶"; toggle.className="toggle";
+      wrapper.appendChild(toggle);
+      toggle.addEventListener("click",()=>{ const s=sub.style.display==="none"; sub.style.display=s?"block":"none"; toggle.textContent=s?"▼":"▶"; });
+    } else wrapper.appendChild(document.createElement("span"));
+    const img=document.createElement("img"); img.src=node.photoURL||("https://ui-avatars.com/api/?background=E5E7EB&color=111&name="+encodeURIComponent(node.fullName||"LITA")); wrapper.appendChild(img);
+    const label=document.createElement("div"); label.innerHTML=`<strong>${node.fullName}</strong> <span class="pill">${node.memberId}</span>`; wrapper.appendChild(label);
+    li.appendChild(wrapper);
+    if(hasChildren){
+      const sub=document.createElement("ul"); sub.className="tree"; sub.style.display="none";
+      node.children.forEach(ch=>renderTreeNode(ch,sub));
+      li.appendChild(sub);
+    }
+    ul.appendChild(li);
+  }
+
+  async function buildAndRenderTree(){
+    const target=document.getElementById("treeRoot"); target.innerHTML="";
+    const rootNode={fullName:"ROOT",memberId:"ROOT",photoURL:"",children:await fetchChildren("ROOT")};
+    const ul=document.createElement("ul"); renderTreeNode(rootNode,ul); target.appendChild(ul);
+  }
+
+  // Export CSV
+  document.getElementById("exportCSV").addEventListener("click", async ()=>{
+    const snap = await db.collection("members").get();
+    const rows = snap.docs.map(d=>d.data());
+    const csv = ["Full Name,Email,Member ID,Phone,Gender,Location,Upline,Progress"].concat(
+      rows.map(r=>`"${r.fullName}","${r.email}","${r.memberId}","${r.phone}","${r.gender}","${r.location}","${r.upline}","${r.businessProgress}"`)
+    ).join("\n");
+    const blob = new Blob([csv],{type:"text/csv"});
+    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="members.csv"; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Export PDF
+  document.getElementById("exportPDF").addEventListener("click", async ()=>{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const snap = await db.collection("members").get();
+    const rows = snap.docs.map(d=>d.data());
+    const body = rows.map(r=>[r.fullName,r.email,r.memberId,r.phone,r.gender,r.location,r.upline,r.businessProgress]);
+    doc.autoTable({head:[["Name","Email","ID","Phone","Gender","Location","Upline","Progress"]],body});
+    doc.save("members.pdf");
+  });
 </script>
 </body>
 </html>
