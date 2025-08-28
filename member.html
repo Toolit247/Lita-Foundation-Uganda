@@ -248,7 +248,41 @@
     rootEl.innerHTML = "";
     const root = { fullName:"Me", memberId: myMemberId, photoURL: (await memberDocRef.get()).data().photoURL||"", children: await fetchChildren(myMemberId) };
     renderTreeNode(root, rootEl);
+  }  function renderTreeNode(node, ul) {
+    const li = document.createElement("li");
+    const img = node.photoURL || "https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(node.fullName||"LITA");
+    li.innerHTML = `
+      <div class="node">
+        <img src="${img}" alt="">
+        <div><strong>${node.fullName}</strong> 
+          <span style="margin-left:6px;color:#1d4ed8;background:#eef2ff;padding:0 6px;border-radius:999px">${node.memberId}</span>
+        </div>
+      </div>
+    `;
+    if (node.children && node.children.length) {
+      const sub = document.createElement("ul");
+      sub.className = "tree";
+      node.children.forEach(ch => renderTreeNode(ch, sub));
+      li.appendChild(sub);
+    }
+    ul.appendChild(li);
   }
+
+  async function buildAndRenderTree() {
+    const rootEl = document.getElementById("treeRoot");
+    rootEl.innerHTML = "";
+    const root = {
+      fullName: "My Downline",
+      memberId: myMemberId,
+      photoURL: "",
+      children: await fetchChildren(myMemberId)
+    };
+    renderTreeNode(root, rootEl);
+  }
+</script>
+</body>
+</html>
+
 </script>
 </body>
 </html>
