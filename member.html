@@ -1,355 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Member Dashboard - LITA Foundation Uganda</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Firebase v8 (matching admin.html) -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>emailjs.init("hZgalRaZwSRy1Zgp4");</script>
   <style>
-    :root{--bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--brand:#2563eb;--brand2:#1d4ed8;--border:#e5e7eb;--ok:#16a34a;--err:#dc2626}
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;color:var(--text)}
-    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border)}
-    .container{max-width:900px;margin:18px auto;padding:0 14px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.03)}
-    h2,h3{margin:0 0 10px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    input,button{padding:11px;border:1px solid var(--border);border-radius:10px;font:inherit}
-    input{width:100%}
-    .btn{background:var(--brand);color:#fff;border:none;cursor:pointer;font-weight:600}
-    .btn:hover{background:var(--brand2)}
-    .btn.outline{background:#eef2ff;color:#111}
-    .msg{margin-top:8px;font-weight:600}
-    .ok{color:var(--ok)} .err{color:var(--err)}
-    .avatar{width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
-    ul.tree, ul.tree ul{list-style:none;margin-left:0;padding-left:18px}
-    ul.tree li{margin:6px 0}
-    .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03)}
-    .node img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
-    .pill{background:#eef2ff;color:#1d4ed8;padding:0 6px;border-radius:999px}
-    table{width:100%;border-collapse:collapse}
-    td{padding:8px;border-bottom:1px solid var(--border)}
-    .toggle{cursor:pointer;font-weight:700;color:#1d4ed8;margin-right:6px}
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .profile, .progress, .tree, .actions { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+    img { width: 60px; height: 60px; border-radius: 50%; }
+    ul { list-style-type: none; padding-left: 20px; }
+    li { margin: 5px 0; }
+    .node { display: flex; align-items: center; gap: 8px; }
   </style>
 </head>
 <body>
-<header>
-  <div><strong>LITA • Member Dashboard</strong></div>
-  <div class="row">
-    <button id="resetPwd" class="btn outline">Reset Password</button>
-    <button id="logout" class="btn">Logout</button>
+  <h2>Member Dashboard</h2>
+
+  <div class="profile">
+    <h3>Profile</h3>
+    <img id="profilePhoto" src="" alt="Profile Photo"/>
+    <p><strong>Name:</strong> <span id="profileName"></span></p>
+    <p><strong>Email:</strong> <span id="profileEmail"></span></p>
+    <p><strong>Phone:</strong> <span id="profilePhone"></span></p>
+    <p><strong>Location:</strong> <span id="profileLocation"></span></p>
+    <p><strong>Member ID:</strong> <span id="profileId"></span></p>
+    <button onclick="sendReset()">Reset Password</button>
   </div>
-</header>
 
-<div class="container">
-  <!-- Profile -->
-  <section class="card">
-    <h3>Your Profile</h3>
-    <div class="row" style="align-items:center">
-      <img id="avatar" class="avatar" src="https://ui-avatars.com/api/?background=E5E7EB&color=111&name=LITA" alt="">
-      <div id="profileText"></div>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <input type="file" id="photoFile" accept="image/*" />
-      <button id="uploadPhoto" class="btn">Upload Photo</button>
-    </div>
-    <div id="photoMsg" class="msg"></div>
-  </section>
-
-  <!-- Update Business Progress -->
-  <section class="card" style="margin-top:14px">
-    <h3>Update Business Progress</h3>
-    <form id="progressForm" class="row">
-      <input type="text" id="businessProgress" placeholder="Enter your progress" required />
-      <button type="submit" class="btn">Update</button>
+  <div class="progress">
+    <h3>Business Progress</h3>
+    <form id="progressForm">
+      <input type="text" id="progressInput" placeholder="Enter progress update" required>
+      <button type="submit">Submit</button>
     </form>
-    <div id="updateMessage" class="msg"></div>
-  </section>
+    <ul id="progressList"></ul>
+  </div>
 
-  <!-- Progress history -->
-  <section class="card" style="margin-top:14px">
-    <h3>Progress History</h3>
-    <ul id="progressHistory"></ul>
-  </section>
+  <div class="tree">
+    <h3>My Downline</h3>
+    <ul id="treeRoot"></ul>
+  </div>
 
-  <!-- Downline tree -->
-  <section class="card" style="margin-top:14px">
-    <h3>Your Downline</h3>
-    <ul id="treeRoot" class="tree"></ul>
-  </section>
-</div>
+  <div class="actions">
+    <button onclick="logout()">Logout</button>
+  </div>
 
 <script>
-  // ---- Firebase (v8) ----
-  var firebaseConfig = {
+  // Firebase Config
+  const firebaseConfig = {
     apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
     authDomain: "lita-platform-bffdc.firebaseapp.com",
     projectId: "lita-platform-bffdc",
-    storageBucket: "lita-platform-bffdc.appspot.com",
+    storageBucket: "lita-platform-bffdc.firebasestorage.app",
     messagingSenderId: "387943226211",
     appId: "1:387943226211:web:0127c409e0f880df391156"
   };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const storage = firebase.storage();
-  // increase upload retry window a bit to reduce retry-limit errors
-  try { storage.setMaxUploadRetryTime(120000); } catch(_) {}
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.getAuth(app);
+  const db = firebase.getFirestore(app);
 
-  let memberDocRef = null;
-  let myMemberId = "";
-  let myPhotoURL = "";
+  let currentMemberId = null;
+  let currentEmail = null;
 
-  // ---- Auth guard + initial load ----
-  firebase.auth().onAuthStateChanged(async (user)=>{
-    if(!user){ window.location.href="signin.html"; return; }
-
-    const doc = await db.collection("members").doc(user.uid).get();
-    if(!doc.exists){
-      await firebase.auth().signOut();
-      alert("Access denied: not registered as a member.");
-      window.location.href="signin.html";
-      return;
-    }
-
-    memberDocRef = doc.ref;
-    const d = doc.data();
-    myMemberId = d.memberId || "";
-    myPhotoURL = d.photoURL || "";
-    renderProfile(d);
-    liveProgressHistory();
-    buildAndRenderTree();
-  });
-
-  function renderProfile(d){
-    const avatar = document.getElementById("avatar");
-    avatar.src = d.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(d.fullName||"LITA"));
-    const created = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : "—";
-    document.getElementById("profileText").innerHTML = `
-      <table>
-        <tr><td><strong>Name</strong></td><td>${d.fullName||""}</td></tr>
-        <tr><td><strong>Email</strong></td><td>${d.email||""}</td></tr>
-        <tr><td><strong>Member ID</strong></td><td><span class="pill">${d.memberId||""}</span></td></tr>
-        <tr><td><strong>Upline</strong></td><td>${d.upline||""}</td></tr>
-        <tr><td><strong>Phone</strong></td><td>${d.phone||""}</td></tr>
-        <tr><td><strong>Gender</strong></td><td>${d.gender||""}</td></tr>
-        <tr><td><strong>Location</strong></td><td>${d.location||""}</td></tr>
-        <tr><td><strong>Current Progress</strong></td><td>${d.businessProgress||"N/A"}</td></tr>
-        <tr><td><strong>Joined</strong></td><td>${created}</td></tr>
-      </table>
-    `;
-  }
-
-  // ---- Photo upload (optional resize + robust upload) ----
-  document.getElementById("uploadPhoto").addEventListener("click", async ()=>{
-    const file = document.getElementById("photoFile").files[0];
-    const msg = document.getElementById("photoMsg");
-    msg.textContent = ""; msg.className="msg";
-    if(!file){ msg.textContent="❌ Please select an image."; msg.classList.add("err"); return; }
-
-    try{
-      const uid = firebase.auth().currentUser.uid;
-
-      // Optional: resize/compress in browser to reduce upload failures
-      const blob = await resizeImageToJpeg(file, 768, 0.85); // max width/height 768px
-      const ref = storage.ref(`member_photos/${uid}/${Date.now()}.jpg`);
-      const metadata = { contentType: 'image/jpeg', cacheControl: 'public,max-age=31536000' };
-
-      const task = ref.put(blob, metadata);
-      await new Promise((resolve, reject) => {
-        task.on('state_changed',
-          null,
-          reject,
-          resolve
-        );
-      });
-
-      const url = await ref.getDownloadURL();
-      await memberDocRef.update({ photoURL:url });
-      myPhotoURL = url;
-      msg.textContent = "✅ Photo uploaded.";
-      msg.classList.add("ok");
-      const d = (await memberDocRef.get()).data();
-      renderProfile(d);
-    }catch(e){
-      let hint = "";
-      if (String(e && e.code || "").includes("retry-limit-exceeded")) {
-        hint = " • Tip: Try a smaller image or better connection.";
-      }
-      msg.textContent = "❌ " + e.message + hint;
-      msg.classList.add("err");
+  firebase.onAuthStateChanged(auth, async (user) => {
+    if (!user) { window.location.href = "index.html"; return; }
+    currentEmail = user.email;
+    const snap = await firebase.getDocs(
+      firebase.query(firebase.collection(db,"members"), firebase.where("email","==",currentEmail))
+    );
+    if (!snap.empty) {
+      const d = snap.docs[0].data();
+      currentMemberId = d.memberId;
+      document.getElementById("profilePhoto").src = d.photoURL || "https://ui-avatars.com/api/?name="+encodeURIComponent(d.fullName);
+      document.getElementById("profileName").textContent = d.fullName;
+      document.getElementById("profileEmail").textContent = d.email;
+      document.getElementById("profilePhone").textContent = d.phone;
+      document.getElementById("profileLocation").textContent = d.location;
+      document.getElementById("profileId").textContent = d.memberId;
+      loadProgress();
+      buildAndRenderTree();
     }
   });
 
-  // helper: resize image to JPEG via canvas
-  function resizeImageToJpeg(file, maxSide, quality){
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      img.onload = () => {
-        let { width, height } = img;
-        const scale = Math.min(1, maxSide / Math.max(width, height));
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          blob => { URL.revokeObjectURL(url); blob ? resolve(blob) : reject(new Error("Failed to create image blob")); },
-          'image/jpeg',
-          quality
-        );
-      };
-      img.onerror = reject;
-      img.src = url;
-    });
-  }
-
-  // ---- Update progress + history ----
+  // Add progress
   document.getElementById("progressForm").addEventListener("submit", async (e)=>{
     e.preventDefault();
-    const progress = document.getElementById("businessProgress").value.trim();
-    const updateMsg = document.getElementById("updateMessage");
-    updateMsg.textContent=""; updateMsg.className="msg";
-    try{
-      await memberDocRef.update({ businessProgress: progress });
-      await memberDocRef.collection("progressHistory").add({
-        progress,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      document.getElementById("businessProgress").value="";
-      updateMsg.textContent="✅ Progress updated.";
-      updateMsg.classList.add("ok");
-      // profile current progress refresh
-      const d = (await memberDocRef.get()).data();
-      renderProfile(d);
-    }catch(e){
-      updateMsg.textContent="❌ " + e.message;
-      updateMsg.classList.add("err");
-    }
+    const txt = document.getElementById("progressInput").value;
+    await firebase.addDoc(firebase.collection(db,"progress"),{
+      memberId: currentMemberId, text: txt, createdAt: new Date()
+    });
+    document.getElementById("progressInput").value="";
+    loadProgress();
   });
 
-  function liveProgressHistory(){
-    memberDocRef.collection("progressHistory").orderBy("timestamp","desc").onSnapshot(snap=>{
-      const ul = document.getElementById("progressHistory");
-      ul.innerHTML = "";
-      snap.forEach(doc=>{
-        const d = doc.data();
-        const t = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
-        const li = document.createElement("li");
-        li.textContent = `${t} — ${d.progress}`;
-        ul.appendChild(li);
-      });
+  async function loadProgress(){
+    const q = firebase.query(
+      firebase.collection(db,"progress"),
+      firebase.where("memberId","==",currentMemberId),
+      firebase.orderBy("createdAt","desc")
+    );
+    const snaps = await firebase.getDocs(q);
+    const list = document.getElementById("progressList");
+    list.innerHTML="";
+    snaps.forEach(doc=>{
+      const li = document.createElement("li");
+      li.textContent = doc.data().text+" ("+doc.data().createdAt.toDate().toLocaleString()+")";
+      list.appendChild(li);
     });
   }
 
-  // ---- Password reset (sends email to logged-in member) ----
-  document.getElementById("resetPwd").addEventListener("click", async ()=>{
-    const user = firebase.auth().currentUser;
-    if(!user || !user.email){ alert("No email found for your account."); return; }
-    try{
-      await firebase.auth().sendPasswordResetEmail(user.email);
-      alert("Password reset email sent.");
-    }catch(e){ alert(e.message); }
-  });
-
-  // ---- Logout ----
-  document.getElementById("logout").addEventListener("click", ()=>{
-    firebase.auth().signOut().then(()=> window.location.href="signin.html");
-  });
-
-  // -------- Recursive Downline tree (based on your Member ID as upline) --------
-  async function fetchChildren(uplineId) {
-    const snap = await db.collection("members").where("upline","==",uplineId).get();
-    const res = [];
-    for (const doc of snap.docs) {
+  // Downline Tree Recursive
+  async function fetchChildren(uplineId){
+    const res=[];
+    const q = firebase.query(firebase.collection(db,"members"), firebase.where("uplineId","==",uplineId));
+    const snaps=await firebase.getDocs(q);
+    for(const doc of snaps.docs){
       const d = doc.data();
       res.push({
-        id: doc.id,
-        fullName: d.fullName||"",
-        memberId: d.memberId||"",
+        memberId: d.memberId,
+        fullName: d.fullName,
         photoURL: d.photoURL||"",
-        // recurse by this child's memberId
-        children: await fetchChildren(d.memberId||"")
+        children: await fetchChildren(d.memberId)
       });
     }
     return res;
   }
 
-  function renderTreeNode(node, ul) {
-    const li = document.createElement("li");
-
-    // expand/collapse only if node has children
-    const hasChildren = node.children && node.children.length > 0;
-    const img = node.photoURL || "https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(node.fullName||"LITA");
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "node";
-
-    if (hasChildren) {
-      const toggle = document.createElement("span");
-      toggle.textContent = "▶";
-      toggle.className = "toggle";
-      wrapper.appendChild(toggle);
-      toggle.addEventListener("click", ()=>{
-        const isHidden = sub.style.display === "none";
-        sub.style.display = isHidden ? "block" : "none";
-        toggle.textContent = isHidden ? "▼" : "▶";
-      });
-    } else {
-      const spacer = document.createElement("span");
-      spacer.style.display = "inline-block";
-      spacer.style.width = "16px";
-      wrapper.appendChild(spacer);
-    }
-
-    const avatar = document.createElement("img");
-    avatar.src = img; avatar.alt = ""; avatar.width = 28; avatar.height = 28; avatar.style.borderRadius = "50%";
-    wrapper.appendChild(avatar);
-
-    const label = document.createElement("div");
-    label.innerHTML = `<strong>${node.fullName}</strong> <span class="pill">${node.memberId}</span>`;
-    wrapper.appendChild(label);
-
-    li.appendChild(wrapper);
-
-    let sub = null;
-    if (hasChildren) {
-      sub = document.createElement("ul");
-      sub.className = "tree";
-      sub.style.display = "none"; // start collapsed
-      node.children.forEach(ch => renderTreeNode(ch, sub));
-      li.appendChild(sub);
-    }
-
-    ul.appendChild(li);
-  }
-
   async function buildAndRenderTree(){
-    const target = document.getElementById("treeRoot");
-    target.innerHTML = "";
-    if(!myMemberId) {
-      target.innerHTML = "<li>No Member ID found on your profile.</li>";
-      return;
+    const root=document.getElementById("treeRoot");
+    root.innerHTML="";
+    const nodes=await fetchChildren(currentMemberId);
+    function render(nodes,parent){
+      nodes.forEach(n=>{
+        const li=document.createElement("li");
+        const img=n.photoURL||("https://ui-avatars.com/api/?name="+encodeURIComponent(n.fullName));
+        li.innerHTML=`<div class="node"><img src="${img}"><span>${n.fullName} <strong>${n.memberId}</strong></span></div>`;
+        parent.appendChild(li);
+        if(n.children.length){
+          const ul=document.createElement("ul");
+          li.appendChild(ul);
+          render(n.children,ul);
+        }
+      });
     }
-    // root = me; children = everyone whose upline == my memberId (and so on recursively)
-    const rootNode = {
-      fullName: "Me",
-      memberId: myMemberId,
-      photoURL: myPhotoURL,
-      children: await fetchChildren(myMemberId)
-    };
-    const ul = document.createElement("ul");
-    renderTreeNode(rootNode, ul);
-    target.appendChild(ul);
+    render(nodes,root);
   }
+
+  // Password Reset (via EmailJS)
+  async function sendReset(){
+    if(!currentEmail||!currentMemberId) return;
+    const tempPass = Math.random().toString(36).slice(-8);
+    // update Firestore with new password
+    const q = firebase.query(firebase.collection(db,"members"), firebase.where("email","==",currentEmail));
+    const snaps = await firebase.getDocs(q);
+    if(!snaps.empty){
+      await firebase.updateDoc(snaps.docs[0].ref,{ tempPassword: tempPass });
+    }
+    // send Email
+    await emailjs.send("service_mrqs34o","template_svacje4",{
+      to_email: currentEmail,
+      to_name: document.getElementById("profileName").textContent,
+      temp_password: tempPass,
+      member_id: currentMemberId
+    });
+    alert("Password reset email sent with new temporary password!");
+  }
+
+  function logout(){ firebase.signOut(auth); }
 </script>
 </body>
 </html>
