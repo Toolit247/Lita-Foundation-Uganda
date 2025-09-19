@@ -1,194 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Member Dashboard - LITA Foundation Uganda</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LITA Member Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f8f9fa; margin:0; padding:0; }
-    header { background:#2c3e50; color:white; padding:15px; text-align:center; }
-    main { padding:20px; max-width:1000px; margin:auto; }
-    section { background:white; border-radius:10px; padding:20px; margin-bottom:20px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-    h2 { color:#2c3e50; }
-    label { display:block; margin-top:10px; font-weight:bold; }
-    input, textarea, button { width:100%; padding:10px; margin-top:5px; border:1px solid #ccc; border-radius:5px; }
-    button { background:#27ae60; color:white; font-weight:bold; cursor:pointer; }
-    button:hover { background:#219150; }
-    ul { list-style:none; padding-left:20px; }
-    .tree li { margin:5px 0; }
-    .logout-btn { background:#e74c3c; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0; padding: 0;
+    }
+    header {
+      background: #006400;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+    }
+    .container { padding: 20px; }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h2 { margin-top: 0; color: #333; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px; text-align: left;
+    }
+    th { background: #f1f1f1; }
+    button {
+      padding: 6px 12px;
+      margin: 3px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-primary { background: #006400; color: #fff; }
+    .btn-danger { background: #b22222; color: #fff; }
+    .btn-secondary { background: #555; color: #fff; }
+    .tree ul {
+      padding-left: 20px; list-style: none;
+    }
+    .tree li { margin: 5px 0; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Member Dashboard</h1>
-  </header>
-  <main>
-    <!-- Profile Section -->
-    <section>
-      <h2>My Profile</h2>
-      <img id="profile-photo" src="" alt="Profile Photo" width="120" style="border-radius:50%; display:block; margin-bottom:10px;">
-      <input type="file" id="photoUpload">
-      <label>Name:</label>
-      <p id="profile-name"></p>
-      <label>Email:</label>
-      <p id="profile-email"></p>
-    </section>
+<header>
+  <h1>Member Dashboard</h1>
+</header>
+<div class="container">
 
-    <!-- Change Password -->
-    <section>
-      <h2>Change Password</h2>
-      <label>Current Password</label>
-      <input type="password" id="currentPassword">
-      <label>New Password</label>
-      <input type="password" id="newPassword">
-      <label>Confirm New Password</label>
-      <input type="password" id="confirmPassword">
-      <button onclick="changePassword()">Update Password</button>
-    </section>
+  <!-- Profile Info -->
+  <div class="card">
+    <h2>My Profile</h2>
+    <p><strong>Name:</strong> <span id="memberName"></span></p>
+    <p><strong>Email:</strong> <span id="memberEmail"></span></p>
+    <p><strong>Member ID:</strong> <span id="memberId"></span></p>
+    <button class="btn-secondary" onclick="sendPasswordReset()">Reset Password</button>
+    <button class="btn-danger" onclick="logout()">Logout</button>
+  </div>
 
-    <!-- Progress History -->
-    <section>
-      <h2>Business Progress</h2>
-      <textarea id="progressInput" placeholder="Enter your progress update..."></textarea>
-      <button onclick="addProgress()">Add Progress</button>
-      <ul id="progressList"></ul>
-    </section>
+  <!-- Progress History -->
+  <div class="card">
+    <h2>My Business Progress</h2>
+    <input type="text" id="progressSearch" placeholder="Search progress..." onkeyup="filterProgress()">
+    <table id="progressTable">
+      <thead>
+        <tr><th>Date</th><th>Update</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="progressBody"></tbody>
+    </table>
+    <button class="btn-primary" onclick="exportProgress('csv')">Export CSV</button>
+    <button class="btn-primary" onclick="exportProgress('pdf')">Export PDF</button>
+  </div>
 
-    <!-- Downline Tree -->
-    <section>
-      <h2>My Downline</h2>
-      <ul id="downlineTree" class="tree"></ul>
-    </section>
+  <!-- Downline Tree -->
+  <div class="card">
+    <h2>My Downline</h2>
+    <div class="tree" id="downlineTree"></div>
+  </div>
 
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </main>
+</div>
 
-  <script>
-    // Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
-      authDomain: "lita-platform-bffdc.firebaseapp.com",
-      projectId: "lita-platform-bffdc",
-      storageBucket: "lita-platform-bffdc.appspot.com",
-      messagingSenderId: "387943226211",
-      appId: "1:387943226211:web:0127c409e0f880df391156",
-      measurementId: "G-44JEYP8ZHD"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-    let currentUser;
+<script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
+    authDomain: "lita-platform-bffdc.firebaseapp.com",
+    projectId: "lita-platform-bffdc",
+    storageBucket: "lita-platform-bffdc.appspot.com",
+    messagingSenderId: "387943226211",
+    appId: "1:387943226211:web:0127c409e0f880df391156"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
-      currentUser = user;
-      loadProfile();
-      loadProgress();
+  // Auth state
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      window.location.href = "login.html";
+    } else {
+      loadProfile(user);
+      loadProgress(user.uid);
       loadDownline(user.uid);
+    }
+  });
+
+  function logout(){ auth.signOut(); }
+
+  function sendPasswordReset(){
+    const user = auth.currentUser;
+    if(user && user.email){
+      auth.sendPasswordResetEmail(user.email)
+        .then(() => alert("Password reset email sent."))
+        .catch(err => alert("Error: " + err.message));
+    }
+  }
+
+  function loadProfile(user){
+    document.getElementById("memberName").innerText = user.displayName || "N/A";
+    document.getElementById("memberEmail").innerText = user.email;
+    db.collection("members").doc(user.uid).get().then(doc=>{
+      if(doc.exists){
+        document.getElementById("memberId").innerText = doc.data().memberId || "N/A";
+      }
     });
+  }
 
-    // Load Profile
-    async function loadProfile() {
-      document.getElementById("profile-email").innerText = currentUser.email;
-      const snap = await db.collection("members").doc(currentUser.uid).get();
-      if (snap.exists) {
-        const data = snap.data();
-        document.getElementById("profile-name").innerText = data.name || "Not set";
-        if (data.photoURL) document.getElementById("profile-photo").src = data.photoURL;
-      }
-      document.getElementById("photoUpload").addEventListener("change", uploadPhoto);
-    }
-
-    async function uploadPhoto(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const ref = storage.ref("profile_photos/" + currentUser.uid);
-      await ref.put(file);
-      const url = await ref.getDownloadURL();
-      await db.collection("members").doc(currentUser.uid).update({ photoURL: url });
-      document.getElementById("profile-photo").src = url;
-    }
-
-    // Change Password
-    async function changePassword() {
-      const currentPass = document.getElementById("currentPassword").value;
-      const newPass = document.getElementById("newPassword").value;
-      const confirmPass = document.getElementById("confirmPassword").value;
-
-      if (newPass !== confirmPass) {
-        alert("Passwords do not match!");
-        return;
-      }
-
-      const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPass);
-      try {
-        await currentUser.reauthenticateWithCredential(credential);
-        await currentUser.updatePassword(newPass);
-        alert("Password updated successfully!");
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    }
-
-    // Progress History
-    async function addProgress() {
-      const text = document.getElementById("progressInput").value;
-      if (!text) return;
-      await db.collection("progress").add({
-        uid: currentUser.uid,
-        text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  function loadProgress(uid){
+    db.collection("progress").where("uid","==",uid).onSnapshot(snapshot=>{
+      let body = document.getElementById("progressBody");
+      body.innerHTML="";
+      snapshot.forEach(doc=>{
+        let d=doc.data();
+        let tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td>${d.date||""}</td>
+          <td>${d.update||""}</td>
+          <td>
+            <button class="btn-secondary" onclick="editProgress('${doc.id}','${d.update}')">Edit</button>
+            <button class="btn-danger" onclick="deleteProgress('${doc.id}')">Delete</button>
+          </td>`;
+        body.appendChild(tr);
       });
-      document.getElementById("progressInput").value = "";
-      loadProgress();
-    }
+    });
+  }
 
-    async function loadProgress() {
-      const list = document.getElementById("progressList");
-      list.innerHTML = "";
-      const snap = await db.collection("progress").where("uid","==",currentUser.uid).orderBy("timestamp","desc").get();
-      snap.forEach(doc => {
-        const li = document.createElement("li");
-        li.textContent = doc.data().text;
-        const del = document.createElement("button");
-        del.textContent = "Delete";
-        del.onclick = async () => {
-          await db.collection("progress").doc(doc.id).delete();
-          loadProgress();
-        };
-        li.appendChild(del);
-        list.appendChild(li);
-      });
+  function editProgress(id, current){
+    let updated=prompt("Edit progress:", current);
+    if(updated){
+      db.collection("progress").doc(id).update({update:updated});
     }
+  }
+  function deleteProgress(id){
+    if(confirm("Delete this progress?")){
+      db.collection("progress").doc(id).delete();
+    }
+  }
 
-    // Recursive Downline
-    async function loadDownline(uid, element=document.getElementById("downlineTree")) {
-      const snap = await db.collection("members").where("sponsor","==",uid).get();
-      snap.forEach(doc => {
-        const li = document.createElement("li");
-        li.textContent = doc.data().name || "Unnamed";
-        const childUl = document.createElement("ul");
-        li.appendChild(childUl);
-        element.appendChild(li);
-        loadDownline(doc.id, childUl);
+  function filterProgress(){
+    let input=document.getElementById("progressSearch").value.toLowerCase();
+    document.querySelectorAll("#progressBody tr").forEach(row=>{
+      row.style.display=row.innerText.toLowerCase().includes(input)?"":"none";
+    });
+  }
+
+  // Export
+  function exportProgress(type){
+    let rows=[["Date","Update"]];
+    document.querySelectorAll("#progressBody tr").forEach(tr=>{
+      let cols=tr.querySelectorAll("td");
+      rows.push([cols[0].innerText, cols[1].innerText]);
+    });
+    if(type==="csv"){
+      let csv=rows.map(r=>r.join(",")).join("\n");
+      let blob=new Blob([csv],{type:"text/csv"});
+      let a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download="progress.csv";
+      a.click();
+    } else if(type==="pdf"){
+      let win=window.open("");
+      win.document.write("<pre>"+rows.map(r=>r.join("\t")).join("\n")+"</pre>");
+      win.print();
+    }
+  }
+
+  // Recursive Downline
+  function loadDownline(uid){
+    let treeDiv=document.getElementById("downlineTree");
+    treeDiv.innerHTML="";
+    function buildTree(id, parentEl){
+      db.collection("members").where("sponsorId","==",id).get().then(snap=>{
+        if(!snap.empty){
+          let ul=document.createElement("ul");
+          snap.forEach(doc=>{
+            let li=document.createElement("li");
+            li.innerText=doc.data().name || "Unnamed";
+            ul.appendChild(li);
+            buildTree(doc.id, li);
+          });
+          parentEl.appendChild(ul);
+        }
       });
     }
-
-    // Logout
-    function logout() {
-      auth.signOut();
-    }
-  </script>
+    buildTree(uid, treeDiv);
+  }
+</script>
 </body>
 </html>
