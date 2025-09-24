@@ -1,500 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Admin Dashboard - LITA Foundation Uganda</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-
-  <!-- Firebase v8 -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
-  <!-- EmailJS -->
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-
-  <!-- jsPDF + autoTable for PDF export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
-  <style>
-    :root{
-      --bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--brand:#2563eb;--brand2:#1d4ed8;--border:#e5e7eb;--ok:#16a34a;--err:#dc2626
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;color:var(--text)}
-    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
-    .container{max-width:1200px;margin:18px auto;padding:0 14px}
-    h2,h3{margin:0 0 10px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.03)}
-    .grid{display:grid;gap:14px}
-    @media(min-width:980px){.grid-2{grid-template-columns:1.2fr .8fr}}
-    input,select,button,textarea{padding:11px;border:1px solid var(--border);border-radius:10px;font:inherit}
-    input,select,textarea{width:100%}
-    .btn{background:var(--brand);color:#fff;border:none;cursor:pointer;font-weight:600}
-    .btn:hover{background:var(--brand2)}
-    .btn.secondary{background:#eef2ff;color:#111}
-    .btn.danger{background:var(--err);color:#fff;border:none}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .search{flex:1;min-width:220px}
-    .msg{margin-top:8px;font-weight:600}
-    .ok{color:var(--ok)} .err{color:var(--err)}
-    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:#fff}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid var(--border);font-size:14px;text-align:left;vertical-align:middle}
-    th{background:#fafafa;white-space:nowrap}
-    .pill{background:#eef2ff;color:#1d4ed8;padding:4px 8px;border-radius:999px;font-size:12px}
-    .avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
-    ul.tree, ul.tree ul{list-style:none;margin-left:0;padding-left:18px}
-    ul.tree li{margin:6px 0}
-    .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03)}
-    .node img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
-    .toggle{cursor:pointer;font-weight:700;color:#1d4ed8;margin-right:8px; user-select:none}
-    .muted{color:var(--muted);font-size:13px}
-    textarea{min-height:80px}
-    .hidden{display:none}
-  </style>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - LITA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="admin.js"></script>
 </head>
 <body>
 <header>
   <div><strong>LITA • Admin Dashboard</strong></div>
   <div class="row">
-    <input id="searchInput" class="search" placeholder="Search by name, email, phone, location, Member ID, Upline…" />
-    <button id="exportCSV" class="btn secondary">Export CSV</button>
-    <button id="exportPDF" class="btn secondary">Export PDF</button>
     <button id="logout" class="btn">Logout</button>
   </div>
 </header>
 
-<div class="container grid grid-2">
+<div class="container">
   <!-- Register Member -->
   <section class="card">
     <h3>Register New Member</h3>
-    <p class="muted">Admin-only. Creates an Auth user (secondary app) and a members profile in Firestore. Sends temp password via EmailJS.</p>
-
-    <form id="addMemberForm" class="grid">
-      <div class="row">
-        <input type="text" id="newFullName" placeholder="Full Name" required />
-        <input type="email" id="newEmail" placeholder="Email" required />
-      </div>
-
-      <div class="row">
-        <input type="text" id="newPhone" placeholder="Phone" required />
-        <select id="newGender" required>
-          <option value="">--Select Gender--</option>
-          <option>Male</option><option>Female</option><option>Other</option>
-        </select>
-      </div>
-
-      <div class="row">
-        <input type="text" id="newLocation" placeholder="Location" required />
-        <input type="text" id="newUpline" placeholder="Upline Member ID (ROOT if none)" />
-      </div>
-
-      <div class="row">
-        <input type="text" id="newMemberId" placeholder="Member ID (manual)" required />
-        <input type="password" id="newPassword" placeholder="Temporary Password" required />
-      </div>
-
-      <div>
-        <label class="muted">Email Template Preview</label>
-        <textarea id="emailPreview" readonly>Hi {{full_name}},
-
-Welcome to LITA Foundation Uganda!
-
-Your Member ID: {{member_id}}
-Upline: {{upline_id}}
-Temporary password: {{temp_password}}
-
-Please sign in and set a new password.
-
-Regards,
-LITA Foundation</textarea>
-      </div>
-
-      <div class="row" style="justify-content:flex-end">
-        <button type="submit" class="btn">Register Member</button>
-      </div>
-      <div id="addMemberMessage" class="msg"></div>
+    <form id="adminRegistrationForm" class="row">
+      <input type="text" id="fullName" placeholder="Full Name" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <input type="text" id="phone" placeholder="Phone" />
+      <input type="text" id="memberId" placeholder="Member ID" required />
+      <input type="text" id="upline" placeholder="Upline Member ID" />
+      <input type="text" id="gender" placeholder="Gender" />
+      <input type="text" id="location" placeholder="Location" />
+      <input type="file" id="photoFile" accept="image/*" />
+      <button type="submit" class="btn">Register Member</button>
+      <div id="registrationMessage" class="msg"></div>
     </form>
   </section>
 
-  <!-- Member Tree -->
-  <section class="card">
-    <h3>Member Tree (ROOT)</h3>
-    <p class="muted">Built from Upline Member IDs. Click arrows to expand/collapse nodes.</p>
-    <ul id="treeRoot" class="tree"></ul>
-  </section>
-
-  <!-- Members table (full width) -->
-  <section class="card" style="grid-column:1/-1">
-    <h3>Registered Members</h3>
-    <div class="toolbar" style="margin-bottom:8px">
-      <input id="tableFilter" placeholder="Filter results (type and press Enter)"/>
-      <button id="refresh" class="btn secondary">Refresh</button>
-    </div>
-
-    <div class="table-wrap">
-      <table id="membersTable">
-        <thead>
-          <tr>
-            <th>Photo</th>
-            <th>Full Name</th>
-            <th>Email</th>
-            <th>Member ID</th>
-            <th>Phone</th>
-            <th>Gender</th>
-            <th>Location</th>
-            <th>Upline</th>
-            <th>Current Progress</th>
-            <th>Joined</th>
-            <th style="min-width:170px">Actions</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="muted" style="margin-top:8px">Note: Deleting a profile removes the Firestore document only. Auth accounts must be removed via Admin SDK on server if desired.</div>
+  <!-- All Members -->
+  <section class="card" style="margin-top:14px">
+    <h3>All Registered Members</h3>
+    <input type="text" id="searchInput" placeholder="Search by name or ID" style="margin-bottom:10px; padding:8px; width:100%; border-radius:6px; border:1px solid #ccc;">
+    <button id="exportCSV" class="btn" style="margin-bottom:10px;">Export CSV</button>
+    <table id="membersTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Member ID</th>
+          <th>Upline</th>
+          <th>Phone</th>
+          <th>Gender</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </section>
 </div>
-
-<script>
-  // ---------- CONFIG ----------
-  const ADMIN_EMAIL = "toolitambrosehenry@gmail.com";
-
-  // Firebase v8 config
-  var firebaseConfig = {
-    apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
-    authDomain: "lita-platform-bffdc.firebaseapp.com",
-    projectId: "lita-platform-bffdc",
-    storageBucket: "lita-platform-bffdc.appspot.com",
-    messagingSenderId: "387943226211",
-    appId: "1:387943226211:web:0127c409e0f880df391156"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const storage = firebase.storage();
-
-  // try to relax upload retry settings (may not exist in older SDKs)
-  try { storage.setMaxUploadRetryTime(120000); } catch(_) {}
-
-  // Secondary app for creating users without logging out admin
-  const secondary = firebase.apps.length < 2 ? firebase.initializeApp(firebaseConfig, "secondary") : firebase.app("secondary");
-
-  // EmailJS init
-  emailjs.init('hZgalRaZwSRy1Zgp4');
-
-  // ---------- ROUTE GUARD ----------
-  firebase.auth().onAuthStateChanged(async user => {
-    if (!user || user.email !== ADMIN_EMAIL) {
-      window.location.href = "signin.html";
-      return;
-    }
-    // user is admin
-    loadMembers();
-    buildAndRenderTree();
-  });
-
-  // ---------- LIVE MEMBERS TABLE ----------
-  let unsubMembers = null;
-  function loadMembers() {
-    if (unsubMembers) unsubMembers();
-    unsubMembers = db.collection("members").orderBy("createdAt","desc")
-      .onSnapshot(snap => renderTable(snap.docs));
-  }
-
-  function renderTable(docs) {
-    const q = (document.getElementById('searchInput').value || '').toLowerCase();
-    const tbody = document.querySelector("#membersTable tbody");
-    tbody.innerHTML = "";
-    docs.forEach(doc => {
-      const d = doc.data();
-      const hay = [d.fullName,d.email,d.phone,d.gender,d.location,d.upline,d.memberId]
-        .map(x => (x||'').toString().toLowerCase()).join(' ');
-      if (q && !hay.includes(q)) return;
-
-      const img = d.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(d.fullName||'LITA'));
-      const created = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleDateString() : "—";
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><img class="avatar" src="${img}" alt=""></td>
-        <td>${escapeHtml(d.fullName||'')}</td>
-        <td>${escapeHtml(d.email||'')}</td>
-        <td><span class="pill">${escapeHtml(d.memberId||'—')}</span></td>
-        <td>${escapeHtml(d.phone||'')}</td>
-        <td>${escapeHtml(d.gender||'')}</td>
-        <td>${escapeHtml(d.location||'')}</td>
-        <td>${escapeHtml(d.upline||'')}</td>
-        <td>${escapeHtml(d.businessProgress||'N/A')}</td>
-        <td>${created}</td>
-        <td>
-          <button class="btn secondary" data-view="${doc.id}">View</button>
-          <button class="btn" data-edit="${doc.id}">Edit ID</button>
-          <button class="btn danger" data-del="${doc.id}">Delete</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  // quick escape helper for innerHTML usage
-  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
-
-  document.getElementById("searchInput").addEventListener("input", () => loadMembers());
-  document.getElementById("refresh").addEventListener("click", () => loadMembers());
-
-  // delegated table clicks
-  document.getElementById("membersTable").addEventListener("click", async (e) => {
-    const vid = e.target.getAttribute("data-view");
-    const eid = e.target.getAttribute("data-edit");
-    const did = e.target.getAttribute("data-del");
-    if (vid) viewHistory(vid);
-    if (eid) editMemberId(eid);
-    if (did) deleteMember(did);
-  });
-
-  // ---------- VIEW PROGRESS HISTORY ----------
-  function viewHistory(memberDocId){
-    const w = window.open("", "Progress History", "width=720,height=540");
-    w.document.write("<h3 style='font-family:Arial'>Progress History</h3><ul id='h' style='font-family:Arial'></ul>");
-    db.collection("members").doc(memberDocId).collection("progressHistory").orderBy("timestamp","desc").get()
-      .then(snap => {
-        const list = w.document.getElementById("h");
-        snap.forEach(doc => {
-          const d = doc.data();
-          const t = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
-          const li = w.document.createElement("li");
-          li.textContent = `${t} — ${d.progress}`;
-          list.appendChild(li);
-        });
-      }).catch(err=>{
-        w.document.body.innerHTML += "<p style='color:red'>Failed to load history: "+err.message+"</p>";
-      });
-  }
-
-  // ---------- EDIT MEMBER ID ----------
-  function editMemberId(memberDocId){
-    const newId = prompt("Enter new Member ID:");
-    if (!newId) return;
-    db.collection("members").doc(memberDocId).update({ memberId: newId })
-      .then(()=>{ alert("Member ID updated."); buildAndRenderTree(); })
-      .catch(err=> alert("Failed: "+err.message));
-  }
-
-  // ---------- DELETE MEMBER (Firestore profile only) ----------
-  async function deleteMember(memberDocId){
-    if (!confirm("Delete this member profile from Firestore? (Auth account remains)")) return;
-    try{
-      await db.collection("members").doc(memberDocId).delete();
-      alert("Deleted profile.");
-      buildAndRenderTree();
-    }catch(e){ alert("Failed: "+e.message); }
-  }
-
-  // ---------- REGISTER MEMBER (secondary app) ----------
-  document.getElementById("addMemberForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const msg = document.getElementById("addMemberMessage");
-    msg.textContent = ""; msg.className = "msg";
-
-    const fullName = document.getElementById("newFullName").value.trim();
-    const email = document.getElementById("newEmail").value.trim();
-    const phone = document.getElementById("newPhone").value.trim();
-    const gender = document.getElementById("newGender").value;
-    const location = document.getElementById("newLocation").value.trim();
-    const upline = (document.getElementById("newUpline").value.trim() || "ROOT");
-    const memberId = document.getElementById("newMemberId").value.trim();
-    const password = document.getElementById("newPassword").value;
-
-    if (!fullName || !email || !memberId || !password) {
-      msg.textContent = "❌ Please fill required fields.";
-      msg.classList.add("err");
-      return;
-    }
-
-    try {
-      // create auth user in secondary app
-      const cred = await secondary.auth().createUserWithEmailAndPassword(email, password);
-      const uid = cred.user.uid;
-
-      // create Firestore profile in primary app
-      await db.collection("members").doc(uid).set({
-        fullName, email, phone, gender, location, upline, memberId,
-        photoURL: "", businessProgress: "", createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Send Email via EmailJS
-      const emailParams = {
-        to_email: email,
-        full_name: fullName,
-        member_id: memberId,
-        upline_id: upline,
-        phone: phone,
-        location: location,
-        temp_password: password
-      };
-
-      try {
-        const res = await emailjs.send('service_mrqs34o', 'template_svacje4', emailParams);
-        console.log("EmailJS sent:", res.status, res.text);
-        msg.textContent = "✅ Member registered and email sent.";
-        msg.classList.add("ok");
-      } catch (e) {
-        console.warn("EmailJS error:", e);
-        msg.textContent = "⚠️ Member registered but email failed (check EmailJS).";
-        msg.classList.add("err");
-      }
-
-      // Offer password reset email (optional) via secondary (non-blocking)
-      try { await secondary.auth().sendPasswordResetEmail(email); } catch (_) {}
-
-      await secondary.auth().signOut();
-      e.target.reset();
-      buildAndRenderTree();
-    } catch (err) {
-      console.error("Registration error:", err);
-      msg.textContent = "❌ " + err.message;
-      msg.classList.add("err");
-    }
-  });
-
-  // ---------- CSV export ----------
-  document.getElementById("exportCSV").addEventListener("click", async ()=> {
-    const qs = await db.collection("members").get();
-    let csv = "Full Name,Email,Member ID,Phone,Gender,Location,Upline,Business Progress,Joined\n";
-    qs.forEach(doc=>{
-      const d = doc.data();
-      const joined = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleDateString() : "";
-      const row = [
-        d.fullName||"", d.email||"", d.memberId||"", d.phone||"",
-        d.gender||"", d.location||"", d.upline||"", (d.businessProgress||"N/A").toString().replace(/[\n\r]+/g," "), joined
-      ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
-      csv += row + "\n";
-    });
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "LITA_Members.csv";
-    a.click();
-  });
-
-  // ---------- PDF export ----------
-  document.getElementById("exportPDF").addEventListener("click", async ()=> {
-    const qs = await db.collection("members").get();
-    const rows = [];
-    qs.forEach(doc=>{
-      const d = doc.data();
-      rows.push([d.fullName||"", d.email||"", d.memberId||"", d.phone||"", d.gender||"", d.location||"", d.upline||"", d.businessProgress||"N/A"]);
-    });
-    const { jsPDF } = window.jspdf;
-    const docPDF = new jsPDF();
-    docPDF.text("LITA Members", 14, 14);
-    docPDF.autoTable({
-      head:[["Full Name","Email","Member ID","Phone","Gender","Location","Upline","Progress"]],
-      body: rows,
-      startY: 20,
-      styles: { fontSize: 8 }
-    });
-    docPDF.save("LITA_Members.pdf");
-  });
-
-  // ---------- Tree building (recursive) ----------
-  async function fetchChildren(uplineId){
-    const snap = await db.collection("members").where("upline","==",uplineId).get();
-    const out = [];
-    for (const doc of snap.docs) {
-      const d = doc.data();
-      out.push({
-        id: doc.id,
-        fullName: d.fullName || "",
-        memberId: d.memberId || "",
-        photoURL: d.photoURL || "",
-        children: await fetchChildren(d.memberId || "")
-      });
-    }
-    return out;
-  }
-
-  function renderTreeNode(node, ul) {
-    const li = document.createElement("li");
-    const hasChildren = node.children && node.children.length > 0;
-    const img = node.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(node.fullName||"LITA"));
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "node";
-
-    if (hasChildren) {
-      const toggle = document.createElement("span");
-      toggle.className = "toggle";
-      toggle.textContent = "▶";
-      wrapper.appendChild(toggle);
-      toggle.addEventListener("click", ()=> {
-        sub.style.display = sub.style.display === "none" ? "block" : "none";
-        toggle.textContent = sub.style.display === "none" ? "▶" : "▼";
-      });
-    } else {
-      const spacer = document.createElement("span");
-      spacer.style.display = "inline-block"; spacer.style.width = "18px";
-      wrapper.appendChild(spacer);
-    }
-
-    const avatar = document.createElement("img");
-    avatar.src = img; avatar.alt = "";
-    wrapper.appendChild(avatar);
-
-    const label = document.createElement("div");
-    label.innerHTML = `<strong>${escapeHtml(node.fullName)}</strong> <span class="pill">${escapeHtml(node.memberId)}</span>`;
-    wrapper.appendChild(label);
-
-    li.appendChild(wrapper);
-
-    let sub = null;
-    if (hasChildren) {
-      sub = document.createElement("ul");
-      sub.className = "tree";
-      sub.style.display = "none";
-      node.children.forEach(ch => renderTreeNode(ch, sub));
-      li.appendChild(sub);
-    }
-
-    ul.appendChild(li);
-  }
-
-  async function buildAndRenderTree(){
-    const rootEl = document.getElementById("treeRoot");
-    rootEl.innerHTML = "";
-    // find ROOT children
-    const tree = await fetchChildren("ROOT");
-    const virtualRoot = { fullName: "ROOT", memberId: "ROOT", photoURL: "", children: tree };
-    const ul = document.createElement("ul");
-    renderTreeNode(virtualRoot, ul);
-    rootEl.appendChild(ul);
-  }
-
-  // ---------- Utilities ----------
-  function sleep(ms){ return new Promise(res=>setTimeout(res, ms)); }
-
-  // ---------- Logout ----------
-  document.getElementById("logout").addEventListener("click", ()=> {
-    firebase.auth().signOut().then(()=> window.location.href="signin.html");
-  });
-
-  // ---------- Small UX helpers ----------
-  // Filter input on Enter for deeper filtering
-  document.getElementById("tableFilter").addEventListener("keyup", (e) => {
-    if (e.key === "Enter") {
-      const v = e.target.value.trim().toLowerCase();
-      document.querySelectorAll("#membersTable tbody tr").forEach(tr => {
-        tr.style.display = tr.textContent.toLowerCase().includes(v) ? "" : "none";
-      });
-    }
-  });
-
-  // escape HTML for safe insertion
-  // (function repeated above is OK; keep it)
-</script>
 </body>
 </html>
