@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Member Registration - LITA</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Firebase v9+ modular SDK -->
+  <script type="module" src="register.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h2>Register New Member</h2>
+    <form id="registrationForm">
+      <input type="text" id="fullName" placeholder="Full Name" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <input type="text" id="phone" placeholder="Phone" />
+      <input type="text" id="memberId" placeholder="Member ID" required />
+      <input type="text" id="upline" placeholder="Upline Member ID" />
+      <input type="text" id="gender" placeholder="Gender" />
+      <input type="text" id="location" placeholder="Location" />
+      <input type="file" id="photoFile" accept="image/*" />
+      <button type="submit">Register Member</button>
+      <div id="registrationMessage"></div>
+    </form>
+  </div>
+</body>
+</html>
