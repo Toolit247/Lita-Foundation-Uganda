@@ -1,400 +1,424 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Admin Dashboard - LITA Foundation Uganda</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+ <head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - LITA Foundation</title>
   <!-- Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
-  <!-- EmailJS -->
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-
-  <!-- jsPDF + autoTable -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root{
-      --bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--brand:#2563eb;--brand2:#1d4ed8;--border:#e5e7eb;--ok:#16a34a;--err:#dc2626
+    :root {
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --brand:#2563eb;
+      --brand2:#1d4ed8;
+      --success:#16a34a;
+      --danger:#dc2626;
+      --border:#e5e7eb;
+      --chip:#eef2ff;
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;color:var(--text)}
-    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
-    .container{max-width:1150px;margin:18px auto;padding:0 14px}
-    h2,h3{margin:0 0 10px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.03)}
-    .grid{display:grid;gap:14px}
-    @media(min-width:900px){.grid-2{grid-template-columns:1.2fr .8fr}}
-    input,select,button{padding:11px;border:1px solid var(--border);border-radius:10px;font:inherit}
-    input,select{width:100%}
-    .btn{background:var(--brand);color:#fff;border:none;cursor:pointer;font-weight:600}
+    header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--card);box-shadow:0 2px 8px rgba(0,0,0,.04);position:sticky;top:0;z-index:10}
+    .title{font-weight:700;letter-spacing:.2px}
+    .btn{background:var(--brand);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;transition:.2s}
     .btn:hover{background:var(--brand2)}
-    .btn.secondary{background:#eef2ff;color:#111}
-    .btn.danger{background:var(--err);color:#fff;border:none}
+    .btn.secondary{background:#eef2f7;color:#111}
+    .btn.link{background:transparent;color:var(--brand);padding:0}
+    .container{max-width:1100px;margin:22px auto;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.04);padding:18px}
+    .grid{display:grid;gap:16px}
+    @media(min-width:900px){.grid-2{grid-template-columns:1.1fr 1fr}}
+    h3{margin:0 0 12px 0}
     .row{display:flex;gap:10px;flex-wrap:wrap}
-    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .search{flex:1;min-width:220px}
-    .msg{margin-top:8px;font-weight:600}
-    .ok{color:var(--ok)} .err{color:var(--err)}
+    input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;outline:none}
+    input:focus,select:focus{border-color:var(--brand)}
+    .muted{color:var(--muted);font-size:13px}
     .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:#fff}
     table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid var(--border);font-size:14px;text-align:left;vertical-align:middle}
-    th{background:#fafafa}
-    .pill{background:#eef2ff;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:12px}
-    .avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
-    ul.tree, ul.tree ul{list-style:none;margin-left:0;padding-left:18px}
-    ul.tree li{margin:6px 0}
-    .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03)}
-    .node img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
+    th,td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:14px}
+    th{background:#fafafa;font-weight:700}
+    .actions button{margin-right:6px}
+    .pill{background:var(--chip);color:var(--brand2);padding:2px 8px;border-radius:999px;font-size:12px}
+    .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
+    .search{flex:1;min-width:220px;position:relative}
+    .search input{padding-left:36px}
+    .search-icon{position:absolute;top:50%;left:10px;transform:translateY(-50%);font-size:14px;color:var(--muted)}
+    .msg{margin-top:8px;font-weight:600}
+    .msg.ok{color:var(--success)}
+    .msg.err{color:var(--danger)}
+    .tiny{font-size:12px;color:var(--muted)}
   </style>
 </head>
-<body>
-<header>
-  <div><strong>LITA • Admin Dashboard</strong></div>
-  <div class="row">
-    <input id="searchInput" placeholder="Search by name, email, phone, location, Member ID, Upline…" />
-    <button id="exportCSV" class="btn secondary">Export CSV</button>
-    <button id="exportPDF" class="btn secondary">Export PDF</button>
+ <header>
+    <div class="title">LITA • Admin Dashboard</div>
     <button id="logout" class="btn">Logout</button>
-  </div>
-</header>
+  </header>
+<body class="bg-gray-100 p-6">
+  <h1 class="text-2xl font-bold mb-4">Admin Dashboard - LITA Foundation Uganda</h1>
 
-<div class="container grid grid-2">
-  <!-- Register Member -->
-  <section class="card">
-    <h3>Register New Member</h3>
-    <p style="color:#6b7280;font-size:13px;margin-bottom:8px">Admin-only. Creates an Auth account with a temporary password and sends details via EmailJS.</p>
-    <form id="addMemberForm" class="grid">
-      <div class="row">
-        <input type="text" id="newFullName" placeholder="Full Name" required />
-        <input type="email" id="newEmail" placeholder="Email" required />
-      </div>
-      <div class="row">
-        <input type="text" id="newPhone" placeholder="Phone" required />
-        <select id="newGender" required>
-          <option value="">--Select Gender--</option>
-          <option>Male</option><option>Female</option>
-        </select>
-      </div>
-      <div class="row">
-        <input type="text" id="newLocation" placeholder="Location" required />
-        <input type="text" id="newUpline" placeholder="Upline Member ID (ROOT if none)" />
-      </div>
-      <div class="row">
-        <input type="text" id="newMemberId" placeholder="Member ID (manual)" required />
-        <input type="password" id="newPassword" placeholder="Temporary Password" required />
-      </div>
-      <div class="row" style="justify-content:flex-end">
-        <button type="submit" class="btn">Register Member</button>
-      </div>
-      <div id="addMemberMessage" class="msg"></div>
+  <!-- Member Registration Form -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold mb-2">Register New Member</h2>
+    <form id="registerForm" class="space-y-2">
+      <input type="text" id="idNumber" placeholder="ID Number" class="w-full border p-2 rounded" required>
+      <input type="text" id="name" placeholder="Full Name" class="w-full border p-2 rounded" required>
+      <input type="email" id="email" placeholder="Email" class="w-full border p-2 rounded" required>
+      <input type="text" id="uplineId" placeholder="Upline ID (ROOT if none)" class="w-full border p-2 rounded">
+      <input type="file" id="photo" class="w-full border p-2 rounded" accept="image/*">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Register</button>
     </form>
-  </section>
+  </div>
+ 
 
-  <!-- Member Tree -->
-  <section class="card">
-    <h3>Member Tree</h3>
-    <p style="color:#6b7280;font-size:13px;margin:6px 0 10px">Built from Upline Member IDs. Root = <code>ROOT</code>.</p>
-    <ul id="treeRoot" class="tree"></ul>
-  </section>
+  <div class="container grid grid-2">
+    <!-- Left: Register member -->
+    <section class="card">
+      <h3>Register New Member</h3>
+      <p class="tiny">Admin-only. This uses a <span class="pill">secondary Firebase app</span> so your admin session stays logged in.</p>
+      <form id="addMemberForm" class="grid">
+        <div class="row" style="gap:12px">
+          <input type="text" id="newFullName" placeholder="Full Name" required />
+          <input type="email" id="newEmail" placeholder="Email" required />
+        </div>
+        <div class="row" style="gap:12px">
+          <input type="text" id="newPhone" placeholder="Phone" required />
+          <select id="newGender" required>
+            <option value="">--Select Gender--</option>
+            <option>Male</option><option>Female</option>
+          </select>
+        </div>
+emailjs.init("hZgalRaZwSRy1Zgp4");
+ // Your EmailJS Public Key document.getElementById("registrationForm").
+addEventListener("submit", function(e) { e.preventDefault();
+ const form = e.target; const data = new FormData(form);
+ const url = "https://script.google.com/macros/s/AKfycbyziV-dkWoEkk14BYzqzXH0QS2EglwRx4LHLZFbo4tLupyghkaO_4a017OiWHmWs6Uy-w/exec";
+ fetch(url, { method: "POST", body: data }) 
+.then(response => response.text()) 
+.then(result => { if (result === "Success") { sendEmailConfirmation(data);
+ document.getElementById("message").textContent = "✅ Registration successful! A confirmation email has been sent."; 
+form.reset(); } else { document.getElementById("message").textContent = "❌ Registration failed. Please try again."; } }) 
+.catch(error => { document.getElementById("message").textContent = "❌ Error: " + error.message; }); });
+ function sendEmailConfirmation(data) { const fullName = data.get("Full Name"); const email = data.get("Email"); const phone = data.get("Phone");
+ const location = data.get("Location"); 
+const upline = data.get("Upline ID"); 
+emailjs.send("service_mrqs34o", "template_svacje4", 
+{ full_name: fullName, to_email: email, phone: phone, location: location, upline: upline }).then(() => 
+{ console.log("✅ Email sent."); }).catch(error => { console.error("❌ Failed to send email:", error); }); } </script> </body> </html>"
+        <div class="row" style="gap:12px">
+          <input type="text" id="newLocation" placeholder="Location" required />
+          <input type="text" id="newUpline" placeholder="Upline ID" required />
+        </div>
+        <div class="row" style="gap:12px">
+          <input type="text" id="newMemberId" placeholder="Member ID (manual)" required />
+          <input type="password" id="newPassword" placeholder="Temporary Password" required />
+        </div>
+        <div class="row" style="justify-content:flex-end">
+          <button type="submit" class="btn">Register Member</button>
+        </div>
+        <div id="addMemberMessage" class="msg"></div>
+      </form>
+    </section>
 
-  <!-- Members Table -->
-  <section class="card" style="grid-column:1/-1">
-    <h3>Registered Members</h3>
-    <div class="table-wrap">
-      <table id="membersTable">
-        <thead>
-          <tr>
-            <th>Photo</th>
-            <th>Full Name</th>
-            <th>Email</th>
-            <th>Member ID</th>
-            <th>Phone</th>
-            <th>Gender</th>
-            <th>Location</th>
-            <th>Upline</th>
-            <th>Progress</th>
-            <th>History</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-</div>
+    <!-- Right: Tools -->
+    <section class="card">
+      <h3>Tools</h3>
+      <div class="toolbar">
+        <div class="search">
+          <span class="search-icon">🔎</span>
+          <input type="text" id="searchInput" placeholder="Search members by name, email, phone, location, Member ID…" />
+        </div>
+        <button id="exportCSV" class="btn secondary">Export CSV</button>
+      </div>
+      <p class="tiny">Click “Edit ID” in the table to update an existing Member ID.</p>
+    </section>
 
-<script>
-  // --- Firebase config (v8) ---
-  var firebaseConfig = {
-    apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
-    authDomain: "lita-platform-bffdc.firebaseapp.com",
-    projectId: "lita-platform-bffdc",
-    storageBucket: "lita-platform-bffdc.appspot.com",
-    messagingSenderId: "387943226211",
-    appId: "1:387943226211:web:0127c409e0f880df391156"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+    <!-- Full width: Members table -->
+    <section class="card" style="grid-column:1/-1">
+      <h3>Registered Members</h3>
+      <div class="table-wrap">
+        <table id="membersTable">
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Member ID</th>
+              <th>Phone</th>
+              <th>Gender</th>
+              <th>Location</th>
+              <th>Upline ID</th>
+              <th>Current Progress</th>
+              <th>History</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 
-  // Secondary app for creating new users
-  const secondary = firebase.apps.length < 2
-    ? firebase.initializeApp(firebaseConfig, "secondary")
-    : firebase.app("secondary");
 
-  // EmailJS
-  emailjs.init('hZgalRaZwSRy1Zgp4'); // your public key
 
-  // Route guard
-  firebase.auth().onAuthStateChanged(user => {
-    if (!user || user.email !== "toolitambrosehenry@gmail.com") {
-      window.location.href = "signin.html";
-    } else {
-      loadMembers();
-      buildAndRenderTree();
+  <!-- Tree Diagram -->
+  <div class="bg-white p-4 rounded shadow">
+    <h2 class="text-xl font-semibold mb-2">Member Tree</h2>
+    <ul id="treeView"></ul>
+  </div>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
+      authDomain: "lita-platform-bffdc.firebaseapp.com",
+      projectId: "lita-platform-bffdc",
+      storageBucket: "lita-platform-bffdc.appspot.com",
+      messagingSenderId: "387943226211",
+      appId: "1:387943226211:web:0127c409e0f880df391156"
+    };
+ // Primary app (admin session)
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Secondary app for creating users (won't replace admin session)
+    const secondary = firebase.apps.length < 2
+      ? firebase.initializeApp(firebaseConfig, "secondary")
+      : firebase.app("secondary");
+
+    // Guard route
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user || user.email !== "toolitambrosehenry@gmail.com") {
+        window.location.href = "signin.html";
+      } else {
+        loadMembers();
+      }
+    });
+
+    // Load members (live)
+    let unsubscribeMembers = null;
+    function loadMembers() {
+      if (unsubscribeMembers) unsubscribeMembers();
+      unsubscribeMembers = db.collection("members")
+        .orderBy("createdAt","desc")
+        .onSnapshot(snap => renderTable(snap.docs));
     }
-  });
 
-  // --- Load Members Table ---
-  let unsubMembers = null;
-  function loadMembers() {
-    if (unsubMembers) unsubMembers();
-    unsubMembers = db.collection("members").orderBy("createdAt","desc")
-      .onSnapshot(snap => renderTable(snap.docs));
-  }
+    function renderTable(docs) {
+      const tbody = document.querySelector("#membersTable tbody");
+      const q = (document.getElementById('searchInput').value || '').toLowerCase();
+      tbody.innerHTML = "";
+      docs.forEach(doc => {
+        const d = doc.data();
+        const hay = [
+          d.fullName, d.email, d.phone, d.gender, d.location, d.upline, d.memberId
+        ].map(x => (x||'').toString().toLowerCase()).join(" ");
 
-  function renderTable(docs) {
-    const q = (document.getElementById('searchInput').value || '').toLowerCase();
-    const tbody = document.querySelector("#membersTable tbody");
-    tbody.innerHTML = "";
-    docs.forEach(doc => {
-      const d = doc.data();
-      const hay = [d.fullName,d.email,d.phone,d.gender,d.location,d.upline,d.memberId]
-        .map(x => (x||'').toString().toLowerCase()).join(' ');
-      if (q && !hay.includes(q)) return;
+        if (q && !hay.includes(q)) return;
 
-      const img = d.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(d.fullName||'LITA'));
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><img class="avatar" src="${img}" alt=""></td>
-        <td>${d.fullName||''}</td>
-        <td>${d.email||''}</td>
-        <td><span class="pill">${d.memberId||'—'}</span></td>
-        <td>${d.phone||''}</td>
-        <td>${d.gender||''}</td>
-        <td>${d.location||''}</td>
-        <td>${d.upline||''}</td>
-        <td>${d.businessProgress||'N/A'}</td>
-        <td><button class="btn secondary" data-view="${doc.id}">View</button></td>
-        <td>
-          <button class="btn secondary" data-edit="${doc.id}">Edit ID</button>
-          <button class="btn danger" data-del="${doc.id}" title="Deletes Firestore profile only">Delete</button>
-        </td>
+        const tr = document.createElement("tr");
+        const imgSrc = d.photoURL || "https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(d.fullName||'LITA');
+
+        tr.innerHTML = `
+          <td><img src="${imgSrc}" alt="photo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid #e5e7eb"/></td>
+          <td>${d.fullName || ""}</td>
+          <td>${d.email || ""}</td>
+          <td><span class="pill">${d.memberId || "—"}</span></td>
+          <td>${d.phone || ""}</td>
+          <td>${d.gender || ""}</td>
+          <td>${d.location || ""}</td>
+          <td>${d.upline || ""}</td>
+          <td>${d.businessProgress || "N/A"}</td>
+          <td><button class="btn link" data-view="${doc.id}">View</button></td>
+          <td class="actions">
+            <button class="btn link" data-edit="${doc.id}">Edit ID</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("searchInput").addEventListener("input", () => loadMembers());
+
+    // View progress history
+    document.querySelector("#membersTable").addEventListener("click", (e) => {
+      const viewId = e.target.getAttribute("data-view");
+      const editId = e.target.getAttribute("data-edit");
+      if (viewId) viewProgressHistory(viewId);
+      if (editId) editMemberId(editId);
+    });
+
+    function viewProgressHistory(memberId) {
+      const w = window.open("", "Progress History", "width=700,height=520");
+      w.document.write("<h3 style='font-family:Arial'>Progress History</h3><ul id='historyList' style='font-family:Arial'></ul>");
+      db.collection("members").doc(memberId).collection("progressHistory").orderBy("timestamp", "desc").get()
+        .then(snapshot => {
+          const list = w.document.getElementById("historyList");
+          snapshot.forEach(doc => {
+            const d = doc.data();
+            const li = w.document.createElement("li");
+            const time = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
+            li.textContent = `${time} — ${d.progress}`;
+            list.appendChild(li);
+          });
+        });
+    }
+
+    // Edit Member ID
+    function editMemberId(memberIdDoc) {
+      const newId = prompt("Enter Member ID:");
+      if (!newId) return;
+      db.collection("members").doc(memberIdDoc).update({ memberId: newId })
+        .then(()=> alert("Member ID updated"))
+        .catch(err => alert("Failed: " + err.message));
+    }
+
+    // Register member (secondary app)
+    document.getElementById("addMemberForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("addMemberMessage");
+      msg.textContent = "";
+      msg.className = "msg";
+
+      const fullName = document.getElementById("newFullName").value.trim();
+      const email = document.getElementById("newEmail").value.trim();
+      const phone = document.getElementById("newPhone").value.trim();
+      const gender = document.getElementById("newGender").value;
+      const location = document.getElementById("newLocation").value.trim();
+      const upline = document.getElementById("newUpline").value.trim();
+      const memberId = document.getElementById("newMemberId").value.trim();
+      const password = document.getElementById("newPassword").value;
+
+      try {
+        const cred = await secondary.auth().createUserWithEmailAndPassword(email, password);
+        const uid = cred.user.uid;
+
+        await db.collection("members").doc(uid).set({
+          fullName, email, phone, gender, location, upline, memberId,
+          businessProgress: "",
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // optional: send password reset
+        try { await secondary.auth().sendPasswordResetEmail(email); } catch(_) {}
+
+        await secondary.auth().signOut();
+
+        (e.target).reset();
+        msg.textContent = "✅ Member registered successfully!";
+        msg.classList.add("ok");
+      } catch (err) {
+        msg.textContent = "❌ " + err.message;
+        msg.classList.add("err");
+      }
+    });
+
+    // Export CSV
+    document.getElementById("exportCSV").addEventListener("click", async () => {
+      const qs = await db.collection("members").get();
+      let csv = "Full Name,Email,Member ID,Phone,Gender,Location,Upline ID,Business Progress\n";
+      qs.forEach(doc => {
+        const d = doc.data();
+        const row = [
+          d.fullName||"", d.email||"", d.memberId||"", d.phone||"", d.gender||"",
+          d.location||"", d.upline||"", (d.businessProgress||"N/A").toString().replace(/[\n\r]+/g," ")
+        ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
+        csv += row + "\n";
+      });
+      const uri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+      const a = document.createElement("a");
+      a.href = uri; a.download = "LITA_Members.csv"; document.body.appendChild(a); a.click(); a.remove();
+    });
+
+    document.getElementById("logout").addEventListener("click", () => {
+      firebase.auth().signOut().then(() => window.location.href = "signin.html");
+    });
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // Register Member
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const idNumber = document.getElementById("idNumber").value;
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const uplineId = document.getElementById("uplineId").value || "ROOT";
+      const file = document.getElementById("photo").files[0];
+
+      let photoUrl = "";
+      if (file) {
+        const storageRef = storage.ref("photos/" + idNumber);
+        await storageRef.put(file);
+        photoUrl = await storageRef.getDownloadURL();
+      }
+
+      await db.collection("members").doc(idNumber).set({
+        idNumber, name, email, uplineId, photoUrl, progress: []
+      });
+
+      alert("Member Registered Successfully!");
+      showFullTree();
+    });
+
+    // Recursive build tree
+    async function buildTree(memberId) {
+      const snapshot = await db.collection("members").where("uplineId", "==", memberId).get();
+      let children = [];
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        children.push({
+          idNumber: data.idNumber,
+          name: data.name,
+          photoUrl: data.photoUrl || "",
+          children: await buildTree(data.idNumber)
+        });
+      }
+      return children;
+    }
+
+    function renderTree(node, container) {
+      let li = document.createElement("li");
+      li.innerHTML = `
+        <div class="p-2 shadow rounded bg-white inline-flex items-center">
+          <img src="${node.photoUrl}" class="w-12 h-12 rounded-full mr-2"/>
+          <span class="font-bold">${node.name}</span> <small>(${node.idNumber})</small>
+        </div>
       `;
-      tbody.appendChild(tr);
-    });
-  }
+      if (node.children && node.children.length > 0) {
+        let ul = document.createElement("ul");
+        node.children.forEach(child => renderTree(child, ul));
+        li.appendChild(ul);
+      }
+      container.appendChild(li);
+    }
 
-  document.getElementById("searchInput").addEventListener("input", () => loadMembers());
-
-  // --- Delegated table actions ---
-  document.getElementById("membersTable").addEventListener("click", async (e) => {
-    const vid = e.target.getAttribute("data-view");
-    const eid = e.target.getAttribute("data-edit");
-    const did = e.target.getAttribute("data-del");
-    if (vid) viewHistory(vid);
-    if (eid) editMemberId(eid);
-    if (did) deleteMember(did);
-  });
-
-  // --- View Progress History ---
-  function viewHistory(memberDocId) {
-    const w = window.open("", "Progress History", "width=720,height=540");
-    w.document.write("<h3 style='font-family:Arial'>Progress History</h3><ul id='h' style='font-family:Arial'></ul>");
-    db.collection("members").doc(memberDocId).collection("progressHistory").orderBy("timestamp","desc").get()
-      .then(s => {
-        const list = w.document.getElementById("h");
-        s.forEach(doc => {
-          const d = doc.data();
-          const t = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
-          const li = w.document.createElement("li");
-          li.textContent = `${t} — ${d.progress}`;
-          list.appendChild(li);
-        });
-      });
-  }
-
-  // --- Edit Member ID ---
-  function editMemberId(memberDocId) {
-    const newId = prompt("Enter Member ID:");
-    if (!newId) return;
-    db.collection("members").doc(memberDocId).update({ memberId:newId })
-      .then(()=> alert("Member ID updated"))
-      .catch(err=> alert("Failed: "+err.message));
-  }
-
-  // --- Delete Member ---
-  async function deleteMember(memberDocId) {
-    if (!confirm("Delete this member profile from Firestore? (Auth account remains)")) return;
-    try {
-      await db.collection("members").doc(memberDocId).delete();
-      alert("Deleted profile.");
-      buildAndRenderTree();
-    } catch(e){ alert("Failed: "+e.message); }
-  }
-
-  // --- Register Member with EmailJS ---
-  document.getElementById("addMemberForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const msg = document.getElementById("addMemberMessage");
-    msg.textContent = ""; 
-    msg.className = "msg";
-
-    const fullName = document.getElementById("newFullName").value.trim();
-    const email = document.getElementById("newEmail").value.trim();
-    const phone = document.getElementById("newPhone").value.trim();
-    const gender = document.getElementById("newGender").value;
-    const location = document.getElementById("newLocation").value.trim();
-    const upline = (document.getElementById("newUpline").value.trim() || "ROOT");
-    const memberId = document.getElementById("newMemberId").value.trim();
-    const password = document.getElementById("newPassword").value;
-
-    try {
-      const cred = await secondary.auth().createUserWithEmailAndPassword(email, password);
-      const uid = cred.user.uid;
-
-      await db.collection("members").doc(uid).set({
-        fullName,
-        email,
-        phone,
-        gender,
-        location,
-        upline,
-        memberId,
-        businessProgress: "",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      const emailParams = {
-        to_email: email,
-        full_name: fullName,
-        member_id: memberId,
-        upline_id: upline,
-        phone: phone,
-        location: location,
-        temp_password: password
+    async function showFullTree() {
+      const rootNode = {
+        idNumber: "ROOT",
+        name: "LITA Network",
+        photoUrl: "",
+        children: await buildTree("ROOT")
       };
-
-      emailjs.send('service_mrqs34o', 'template_svacje4', emailParams)
-        .then(response => {
-          console.log('✅ Email sent:', response.status, response.text);
-          msg.textContent = "✅ Member registered and email sent.";
-          msg.classList.add("ok");
-        })
-        .catch(err => {
-          console.error('❌ EmailJS error:', err);
-          msg.textContent = "⚠️ Member registered but email failed. Check console.";
-          msg.classList.add("err");
-        });
-
-      try { await secondary.auth().sendPasswordResetEmail(email); } catch(_) {}
-      await secondary.auth().signOut();
-      e.target.reset();
-      buildAndRenderTree();
-
-    } catch(err){
-      console.error('❌ Registration error:', err);
-      msg.textContent = "❌ " + err.message;
-      msg.classList.add("err");
+      let container = document.getElementById("treeView");
+      container.innerHTML = "";
+      renderTree(rootNode, container);
     }
-  });
 
-  // --- CSV Export ---
-  document.getElementById("exportCSV").addEventListener("click", async ()=> {
-    const qs = await db.collection("members").get();
-    let csv = "Full Name,Email,Member ID,Phone,Gender,Location,Upline,Business Progress\n";
-    qs.forEach(doc=>{
-      const d = doc.data();
-      const row = [
-        d.fullName||"", d.email||"", d.memberId||"", d.phone||"",
-        d.gender||"", d.location||"", d.upline||"", (d.businessProgress||"N/A").toString().replace(/[\n\r]+/g," ")
-      ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
-      csv += row + "\n";
-    });
-    const uri = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
-    const a = document.createElement("a");
-    a.href = uri; a.download = "LITA_Members.csv"; document.body.appendChild(a); a.click(); a.remove();
-  });
-
-  // --- PDF Export ---
-  document.getElementById("exportPDF").addEventListener("click", async ()=> {
-    const qs = await db.collection("members").get();
-    const rows = [];
-    qs.forEach(doc=>{
-      const d = doc.data();
-      rows.push([d.fullName||"", d.email||"", d.memberId||"", d.phone||"",
-        d.gender||"", d.location||"", d.upline||"", d.businessProgress||"N/A"
-      ]);
-    });
-    const { jsPDF } = window.jspdf;
-    const docPDF = new jsPDF();
-    docPDF.text("LITA Members", 14, 14);
-    docPDF.autoTable({
-      head:[["Full Name","Email","Member ID","Phone","Gender","Location","Upline","Progress"]],
-      body: rows,
-      startY: 20,
-      styles: { fontSize: 8 }
-    });
-    docPDF.save("LITA_Members.pdf");
-  });
-
-  // --- Logout ---
-  document.getElementById("logout").addEventListener("click", ()=> {
-    firebase.auth().signOut().then(()=> window.location.href="signin.html");
-  });
-
-  // --- Build Recursive Tree ---
-  async function fetchChildren(uplineId) {
-    const snap = await db.collection("members").where("upline","==",uplineId).get();
-    const res = [];
-    for (const doc of snap.docs) {
-      const d = doc.data();
-      res.push({
-        id: doc.id,
-        fullName: d.fullName||"",
-        memberId: d.memberId||"",
-        photoURL: d.photoURL||"",
-        children: await fetchChildren(d.memberId||"")
-      });
-    }
-    return res;
-  }
-
-  async function buildAndRenderTree() {
-    const root = document.getElementById("treeRoot");
-    root.innerHTML = "";
-    const tree = await fetchChildren("ROOT");
-
-    function renderNodes(nodes, parent) {
-      nodes.forEach(n=>{
-        const li = document.createElement("li");
-        const img = n.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name="+encodeURIComponent(n.fullName));
-        li.innerHTML = `<div class="node"><img src="${img}"/><span>${n.fullName} <strong>${n.memberId}</strong></span></div>`;
-        parent.appendChild(li);
-        if(n.children.length){
-          const ul = document.createElement("ul");
-          li.appendChild(ul);
-          renderNodes(n.children, ul);
-        }
-      });
-    }
-    renderNodes(tree, root);
-  }
-</script>
+    showFullTree();
+  </script>
 </body>
 </html>
+
+
+   
+ 
+
+
