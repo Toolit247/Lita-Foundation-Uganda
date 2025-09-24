@@ -1,424 +1,355 @@
 <!DOCTYPE html>
 <html lang="en">
- <head>
-  <meta charset="UTF-8">
-  <title>Admin Dashboard - LITA Foundation</title>
-  <!-- Firebase v8 -->
+<head>
+  <meta charset="UTF-8" />
+  <title>Member Dashboard - LITA Foundation Uganda</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Firebase v8 (matching admin.html) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
-    :root {
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --text:#1f2937;
-      --muted:#6b7280;
-      --brand:#2563eb;
-      --brand2:#1d4ed8;
-      --success:#16a34a;
-      --danger:#dc2626;
-      --border:#e5e7eb;
-      --chip:#eef2ff;
-    }
+    :root{--bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--brand:#2563eb;--brand2:#1d4ed8;--border:#e5e7eb;--ok:#16a34a;--err:#dc2626}
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;color:var(--text)}
-    header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--card);box-shadow:0 2px 8px rgba(0,0,0,.04);position:sticky;top:0;z-index:10}
-    .title{font-weight:700;letter-spacing:.2px}
-    .btn{background:var(--brand);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;transition:.2s}
-    .btn:hover{background:var(--brand2)}
-    .btn.secondary{background:#eef2f7;color:#111}
-    .btn.link{background:transparent;color:var(--brand);padding:0}
-    .container{max-width:1100px;margin:22px auto;padding:0 16px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.04);padding:18px}
-    .grid{display:grid;gap:16px}
-    @media(min-width:900px){.grid-2{grid-template-columns:1.1fr 1fr}}
-    h3{margin:0 0 12px 0}
+    header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border)}
+    .container{max-width:900px;margin:18px auto;padding:0 14px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.03)}
+    h2,h3{margin:0 0 10px}
     .row{display:flex;gap:10px;flex-wrap:wrap}
-    input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;outline:none}
-    input:focus,select:focus{border-color:var(--brand)}
-    .muted{color:var(--muted);font-size:13px}
-    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:#fff}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:14px}
-    th{background:#fafafa;font-weight:700}
-    .actions button{margin-right:6px}
-    .pill{background:var(--chip);color:var(--brand2);padding:2px 8px;border-radius:999px;font-size:12px}
-    .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
-    .search{flex:1;min-width:220px;position:relative}
-    .search input{padding-left:36px}
-    .search-icon{position:absolute;top:50%;left:10px;transform:translateY(-50%);font-size:14px;color:var(--muted)}
+    input,button{padding:11px;border:1px solid var(--border);border-radius:10px;font:inherit}
+    input{width:100%}
+    .btn{background:var(--brand);color:#fff;border:none;cursor:pointer;font-weight:600}
+    .btn:hover{background:var(--brand2)}
+    .btn.outline{background:#eef2ff;color:#111}
     .msg{margin-top:8px;font-weight:600}
-    .msg.ok{color:var(--success)}
-    .msg.err{color:var(--danger)}
-    .tiny{font-size:12px;color:var(--muted)}
+    .ok{color:var(--ok)} .err{color:var(--err)}
+    .avatar{width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
+    ul.tree, ul.tree ul{list-style:none;margin-left:0;padding-left:18px}
+    ul.tree li{margin:6px 0}
+    .node{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.03)}
+    .node img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
+    .pill{background:#eef2ff;color:#1d4ed8;padding:0 6px;border-radius:999px}
+    table{width:100%;border-collapse:collapse}
+    td{padding:8px;border-bottom:1px solid var(--border)}
+    .toggle{cursor:pointer;font-weight:700;color:#1d4ed8;margin-right:6px}
   </style>
 </head>
- <header>
-    <div class="title">LITA • Admin Dashboard</div>
+<body>
+<header>
+  <div><strong>LITA • Member Dashboard</strong></div>
+  <div class="row">
+    <button id="resetPwd" class="btn outline">Reset Password</button>
     <button id="logout" class="btn">Logout</button>
-  </header>
-<body class="bg-gray-100 p-6">
-  <h1 class="text-2xl font-bold mb-4">Admin Dashboard - LITA Foundation Uganda</h1>
+  </div>
+</header>
 
-  <!-- Member Registration Form -->
-  <div class="bg-white p-4 rounded shadow mb-6">
-    <h2 class="text-xl font-semibold mb-2">Register New Member</h2>
-    <form id="registerForm" class="space-y-2">
-      <input type="text" id="idNumber" placeholder="ID Number" class="w-full border p-2 rounded" required>
-      <input type="text" id="name" placeholder="Full Name" class="w-full border p-2 rounded" required>
-      <input type="email" id="email" placeholder="Email" class="w-full border p-2 rounded" required>
-      <input type="text" id="uplineId" placeholder="Upline ID (ROOT if none)" class="w-full border p-2 rounded">
-      <input type="file" id="photo" class="w-full border p-2 rounded" accept="image/*">
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Register</button>
+<div class="container">
+  <!-- Profile -->
+  <section class="card">
+    <h3>Your Profile</h3>
+    <div class="row" style="align-items:center">
+      <img id="avatar" class="avatar" src="https://ui-avatars.com/api/?background=E5E7EB&color=111&name=LITA" alt="">
+      <div id="profileText"></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <input type="file" id="photoFile" accept="image/*" />
+      <button id="uploadPhoto" class="btn">Upload Photo</button>
+    </div>
+    <div id="photoMsg" class="msg"></div>
+  </section>
+
+  <!-- Update Business Progress -->
+  <section class="card" style="margin-top:14px">
+    <h3>Update Business Progress</h3>
+    <form id="progressForm" class="row">
+      <input type="text" id="businessProgress" placeholder="Enter your progress" required />
+      <button type="submit" class="btn">Update</button>
     </form>
-  </div>
- 
+    <div id="updateMessage" class="msg"></div>
+  </section>
 
-  <div class="container grid grid-2">
-    <!-- Left: Register member -->
-    <section class="card">
-      <h3>Register New Member</h3>
-      <p class="tiny">Admin-only. This uses a <span class="pill">secondary Firebase app</span> so your admin session stays logged in.</p>
-      <form id="addMemberForm" class="grid">
-        <div class="row" style="gap:12px">
-          <input type="text" id="newFullName" placeholder="Full Name" required />
-          <input type="email" id="newEmail" placeholder="Email" required />
-        </div>
-        <div class="row" style="gap:12px">
-          <input type="text" id="newPhone" placeholder="Phone" required />
-          <select id="newGender" required>
-            <option value="">--Select Gender--</option>
-            <option>Male</option><option>Female</option>
-          </select>
-        </div>
-emailjs.init("hZgalRaZwSRy1Zgp4");
- // Your EmailJS Public Key document.getElementById("registrationForm").
-addEventListener("submit", function(e) { e.preventDefault();
- const form = e.target; const data = new FormData(form);
- const url = "https://script.google.com/macros/s/AKfycbyziV-dkWoEkk14BYzqzXH0QS2EglwRx4LHLZFbo4tLupyghkaO_4a017OiWHmWs6Uy-w/exec";
- fetch(url, { method: "POST", body: data }) 
-.then(response => response.text()) 
-.then(result => { if (result === "Success") { sendEmailConfirmation(data);
- document.getElementById("message").textContent = "✅ Registration successful! A confirmation email has been sent."; 
-form.reset(); } else { document.getElementById("message").textContent = "❌ Registration failed. Please try again."; } }) 
-.catch(error => { document.getElementById("message").textContent = "❌ Error: " + error.message; }); });
- function sendEmailConfirmation(data) { const fullName = data.get("Full Name"); const email = data.get("Email"); const phone = data.get("Phone");
- const location = data.get("Location"); 
-const upline = data.get("Upline ID"); 
-emailjs.send("service_mrqs34o", "template_svacje4", 
-{ full_name: fullName, to_email: email, phone: phone, location: location, upline: upline }).then(() => 
-{ console.log("✅ Email sent."); }).catch(error => { console.error("❌ Failed to send email:", error); }); } </script> </body> </html>"
-        <div class="row" style="gap:12px">
-          <input type="text" id="newLocation" placeholder="Location" required />
-          <input type="text" id="newUpline" placeholder="Upline ID" required />
-        </div>
-        <div class="row" style="gap:12px">
-          <input type="text" id="newMemberId" placeholder="Member ID (manual)" required />
-          <input type="password" id="newPassword" placeholder="Temporary Password" required />
-        </div>
-        <div class="row" style="justify-content:flex-end">
-          <button type="submit" class="btn">Register Member</button>
-        </div>
-        <div id="addMemberMessage" class="msg"></div>
-      </form>
-    </section>
+  <!-- Progress history -->
+  <section class="card" style="margin-top:14px">
+    <h3>Progress History</h3>
+    <ul id="progressHistory"></ul>
+  </section>
 
-    <!-- Right: Tools -->
-    <section class="card">
-      <h3>Tools</h3>
-      <div class="toolbar">
-        <div class="search">
-          <span class="search-icon">🔎</span>
-          <input type="text" id="searchInput" placeholder="Search members by name, email, phone, location, Member ID…" />
-        </div>
-        <button id="exportCSV" class="btn secondary">Export CSV</button>
-      </div>
-      <p class="tiny">Click “Edit ID” in the table to update an existing Member ID.</p>
-    </section>
+  <!-- Downline tree -->
+  <section class="card" style="margin-top:14px">
+    <h3>Your Downline</h3>
+    <ul id="treeRoot" class="tree"></ul>
+  </section>
+</div>
 
-    <!-- Full width: Members table -->
-    <section class="card" style="grid-column:1/-1">
-      <h3>Registered Members</h3>
-      <div class="table-wrap">
-        <table id="membersTable">
-          <thead>
-            <tr>
-              <th>Photo</th>
-              <th>Full Name</th>
-              <th>Email</th>
-              <th>Member ID</th>
-              <th>Phone</th>
-              <th>Gender</th>
-              <th>Location</th>
-              <th>Upline ID</th>
-              <th>Current Progress</th>
-              <th>History</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-  </div>
+<script>
+  // ---- Firebase (v8) ----
+  var firebaseConfig = {
+    apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
+    authDomain: "lita-platform-bffdc.firebaseapp.com",
+    projectId: "lita-platform-bffdc",
+    storageBucket: "lita-platform-bffdc.appspot.com",
+    messagingSenderId: "387943226211",
+    appId: "1:387943226211:web:0127c409e0f880df391156"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+  // increase upload retry window a bit to reduce retry-limit errors
+  try { storage.setMaxUploadRetryTime(120000); } catch(_) {}
 
+  let memberDocRef = null;
+  let myMemberId = "";
+  let myPhotoURL = "";
 
+  // ---- Auth guard + initial load ----
+  firebase.auth().onAuthStateChanged(async (user)=>{
+    if(!user){ window.location.href="signin.html"; return; }
 
-  <!-- Tree Diagram -->
-  <div class="bg-white p-4 rounded shadow">
-    <h2 class="text-xl font-semibold mb-2">Member Tree</h2>
-    <ul id="treeView"></ul>
-  </div>
-
-  <script>
-    // Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyAMnu2djtDKXMrTVKnppeCfKXRCy1KkEYk",
-      authDomain: "lita-platform-bffdc.firebaseapp.com",
-      projectId: "lita-platform-bffdc",
-      storageBucket: "lita-platform-bffdc.appspot.com",
-      messagingSenderId: "387943226211",
-      appId: "1:387943226211:web:0127c409e0f880df391156"
-    };
- // Primary app (admin session)
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // Secondary app for creating users (won't replace admin session)
-    const secondary = firebase.apps.length < 2
-      ? firebase.initializeApp(firebaseConfig, "secondary")
-      : firebase.app("secondary");
-
-    // Guard route
-    firebase.auth().onAuthStateChanged(user => {
-      if (!user || user.email !== "toolitambrosehenry@gmail.com") {
-        window.location.href = "signin.html";
-      } else {
-        loadMembers();
-      }
-    });
-
-    // Load members (live)
-    let unsubscribeMembers = null;
-    function loadMembers() {
-      if (unsubscribeMembers) unsubscribeMembers();
-      unsubscribeMembers = db.collection("members")
-        .orderBy("createdAt","desc")
-        .onSnapshot(snap => renderTable(snap.docs));
+    const doc = await db.collection("members").doc(user.uid).get();
+    if(!doc.exists){
+      await firebase.auth().signOut();
+      alert("Access denied: not registered as a member.");
+      window.location.href="signin.html";
+      return;
     }
 
-    function renderTable(docs) {
-      const tbody = document.querySelector("#membersTable tbody");
-      const q = (document.getElementById('searchInput').value || '').toLowerCase();
-      tbody.innerHTML = "";
-      docs.forEach(doc => {
-        const d = doc.data();
-        const hay = [
-          d.fullName, d.email, d.phone, d.gender, d.location, d.upline, d.memberId
-        ].map(x => (x||'').toString().toLowerCase()).join(" ");
+    memberDocRef = doc.ref;
+    const d = doc.data();
+    myMemberId = d.memberId || "";
+    myPhotoURL = d.photoURL || "";
+    renderProfile(d);
+    liveProgressHistory();
+    buildAndRenderTree();
+  });
 
-        if (q && !hay.includes(q)) return;
+  function renderProfile(d){
+    const avatar = document.getElementById("avatar");
+    avatar.src = d.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(d.fullName||"LITA"));
+    const created = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : "—";
+    document.getElementById("profileText").innerHTML = `
+      <table>
+        <tr><td><strong>Name</strong></td><td>${d.fullName||""}</td></tr>
+        <tr><td><strong>Email</strong></td><td>${d.email||""}</td></tr>
+        <tr><td><strong>Member ID</strong></td><td><span class="pill">${d.memberId||""}</span></td></tr>
+        <tr><td><strong>Upline</strong></td><td>${d.upline||""}</td></tr>
+        <tr><td><strong>Phone</strong></td><td>${d.phone||""}</td></tr>
+        <tr><td><strong>Gender</strong></td><td>${d.gender||""}</td></tr>
+        <tr><td><strong>Location</strong></td><td>${d.location||""}</td></tr>
+        <tr><td><strong>Current Progress</strong></td><td>${d.businessProgress||"N/A"}</td></tr>
+        <tr><td><strong>Joined</strong></td><td>${created}</td></tr>
+      </table>
+    `;
+  }
 
-        const tr = document.createElement("tr");
-        const imgSrc = d.photoURL || "https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(d.fullName||'LITA');
+  // ---- Photo upload (optional resize + robust upload) ----
+  document.getElementById("uploadPhoto").addEventListener("click", async ()=>{
+    const file = document.getElementById("photoFile").files[0];
+    const msg = document.getElementById("photoMsg");
+    msg.textContent = ""; msg.className="msg";
+    if(!file){ msg.textContent="❌ Please select an image."; msg.classList.add("err"); return; }
 
-        tr.innerHTML = `
-          <td><img src="${imgSrc}" alt="photo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid #e5e7eb"/></td>
-          <td>${d.fullName || ""}</td>
-          <td>${d.email || ""}</td>
-          <td><span class="pill">${d.memberId || "—"}</span></td>
-          <td>${d.phone || ""}</td>
-          <td>${d.gender || ""}</td>
-          <td>${d.location || ""}</td>
-          <td>${d.upline || ""}</td>
-          <td>${d.businessProgress || "N/A"}</td>
-          <td><button class="btn link" data-view="${doc.id}">View</button></td>
-          <td class="actions">
-            <button class="btn link" data-edit="${doc.id}">Edit ID</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
+    try{
+      const uid = firebase.auth().currentUser.uid;
 
-    document.getElementById("searchInput").addEventListener("input", () => loadMembers());
+      // Optional: resize/compress in browser to reduce upload failures
+      const blob = await resizeImageToJpeg(file, 768, 0.85); // max width/height 768px
+      const ref = storage.ref(`member_photos/${uid}/${Date.now()}.jpg`);
+      const metadata = { contentType: 'image/jpeg', cacheControl: 'public,max-age=31536000' };
 
-    // View progress history
-    document.querySelector("#membersTable").addEventListener("click", (e) => {
-      const viewId = e.target.getAttribute("data-view");
-      const editId = e.target.getAttribute("data-edit");
-      if (viewId) viewProgressHistory(viewId);
-      if (editId) editMemberId(editId);
-    });
-
-    function viewProgressHistory(memberId) {
-      const w = window.open("", "Progress History", "width=700,height=520");
-      w.document.write("<h3 style='font-family:Arial'>Progress History</h3><ul id='historyList' style='font-family:Arial'></ul>");
-      db.collection("members").doc(memberId).collection("progressHistory").orderBy("timestamp", "desc").get()
-        .then(snapshot => {
-          const list = w.document.getElementById("historyList");
-          snapshot.forEach(doc => {
-            const d = doc.data();
-            const li = w.document.createElement("li");
-            const time = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
-            li.textContent = `${time} — ${d.progress}`;
-            list.appendChild(li);
-          });
-        });
-    }
-
-    // Edit Member ID
-    function editMemberId(memberIdDoc) {
-      const newId = prompt("Enter Member ID:");
-      if (!newId) return;
-      db.collection("members").doc(memberIdDoc).update({ memberId: newId })
-        .then(()=> alert("Member ID updated"))
-        .catch(err => alert("Failed: " + err.message));
-    }
-
-    // Register member (secondary app)
-    document.getElementById("addMemberForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const msg = document.getElementById("addMemberMessage");
-      msg.textContent = "";
-      msg.className = "msg";
-
-      const fullName = document.getElementById("newFullName").value.trim();
-      const email = document.getElementById("newEmail").value.trim();
-      const phone = document.getElementById("newPhone").value.trim();
-      const gender = document.getElementById("newGender").value;
-      const location = document.getElementById("newLocation").value.trim();
-      const upline = document.getElementById("newUpline").value.trim();
-      const memberId = document.getElementById("newMemberId").value.trim();
-      const password = document.getElementById("newPassword").value;
-
-      try {
-        const cred = await secondary.auth().createUserWithEmailAndPassword(email, password);
-        const uid = cred.user.uid;
-
-        await db.collection("members").doc(uid).set({
-          fullName, email, phone, gender, location, upline, memberId,
-          businessProgress: "",
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // optional: send password reset
-        try { await secondary.auth().sendPasswordResetEmail(email); } catch(_) {}
-
-        await secondary.auth().signOut();
-
-        (e.target).reset();
-        msg.textContent = "✅ Member registered successfully!";
-        msg.classList.add("ok");
-      } catch (err) {
-        msg.textContent = "❌ " + err.message;
-        msg.classList.add("err");
-      }
-    });
-
-    // Export CSV
-    document.getElementById("exportCSV").addEventListener("click", async () => {
-      const qs = await db.collection("members").get();
-      let csv = "Full Name,Email,Member ID,Phone,Gender,Location,Upline ID,Business Progress\n";
-      qs.forEach(doc => {
-        const d = doc.data();
-        const row = [
-          d.fullName||"", d.email||"", d.memberId||"", d.phone||"", d.gender||"",
-          d.location||"", d.upline||"", (d.businessProgress||"N/A").toString().replace(/[\n\r]+/g," ")
-        ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
-        csv += row + "\n";
-      });
-      const uri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-      const a = document.createElement("a");
-      a.href = uri; a.download = "LITA_Members.csv"; document.body.appendChild(a); a.click(); a.remove();
-    });
-
-    document.getElementById("logout").addEventListener("click", () => {
-      firebase.auth().signOut().then(() => window.location.href = "signin.html");
-    });
-
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
-
-    // Register Member
-    document.getElementById("registerForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const idNumber = document.getElementById("idNumber").value;
-      const name = document.getElementById("name").value;
-      const email = document.getElementById("email").value;
-      const uplineId = document.getElementById("uplineId").value || "ROOT";
-      const file = document.getElementById("photo").files[0];
-
-      let photoUrl = "";
-      if (file) {
-        const storageRef = storage.ref("photos/" + idNumber);
-        await storageRef.put(file);
-        photoUrl = await storageRef.getDownloadURL();
-      }
-
-      await db.collection("members").doc(idNumber).set({
-        idNumber, name, email, uplineId, photoUrl, progress: []
+      const task = ref.put(blob, metadata);
+      await new Promise((resolve, reject) => {
+        task.on('state_changed',
+          null,
+          reject,
+          resolve
+        );
       });
 
-      alert("Member Registered Successfully!");
-      showFullTree();
-    });
-
-    // Recursive build tree
-    async function buildTree(memberId) {
-      const snapshot = await db.collection("members").where("uplineId", "==", memberId).get();
-      let children = [];
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        children.push({
-          idNumber: data.idNumber,
-          name: data.name,
-          photoUrl: data.photoUrl || "",
-          children: await buildTree(data.idNumber)
-        });
+      const url = await ref.getDownloadURL();
+      await memberDocRef.update({ photoURL:url });
+      myPhotoURL = url;
+      msg.textContent = "✅ Photo uploaded.";
+      msg.classList.add("ok");
+      const d = (await memberDocRef.get()).data();
+      renderProfile(d);
+    }catch(e){
+      let hint = "";
+      if (String(e && e.code || "").includes("retry-limit-exceeded")) {
+        hint = " • Tip: Try a smaller image or better connection.";
       }
-      return children;
+      msg.textContent = "❌ " + e.message + hint;
+      msg.classList.add("err");
     }
+  });
 
-    function renderTree(node, container) {
-      let li = document.createElement("li");
-      li.innerHTML = `
-        <div class="p-2 shadow rounded bg-white inline-flex items-center">
-          <img src="${node.photoUrl}" class="w-12 h-12 rounded-full mr-2"/>
-          <span class="font-bold">${node.name}</span> <small>(${node.idNumber})</small>
-        </div>
-      `;
-      if (node.children && node.children.length > 0) {
-        let ul = document.createElement("ul");
-        node.children.forEach(child => renderTree(child, ul));
-        li.appendChild(ul);
-      }
-      container.appendChild(li);
-    }
+  // helper: resize image to JPEG via canvas
+  function resizeImageToJpeg(file, maxSide, quality){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxSide / Math.max(width, height));
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
 
-    async function showFullTree() {
-      const rootNode = {
-        idNumber: "ROOT",
-        name: "LITA Network",
-        photoUrl: "",
-        children: await buildTree("ROOT")
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          blob => { URL.revokeObjectURL(url); blob ? resolve(blob) : reject(new Error("Failed to create image blob")); },
+          'image/jpeg',
+          quality
+        );
       };
-      let container = document.getElementById("treeView");
-      container.innerHTML = "";
-      renderTree(rootNode, container);
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  // ---- Update progress + history ----
+  document.getElementById("progressForm").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const progress = document.getElementById("businessProgress").value.trim();
+    const updateMsg = document.getElementById("updateMessage");
+    updateMsg.textContent=""; updateMsg.className="msg";
+    try{
+      await memberDocRef.update({ businessProgress: progress });
+      await memberDocRef.collection("progressHistory").add({
+        progress,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      document.getElementById("businessProgress").value="";
+      updateMsg.textContent="✅ Progress updated.";
+      updateMsg.classList.add("ok");
+      // profile current progress refresh
+      const d = (await memberDocRef.get()).data();
+      renderProfile(d);
+    }catch(e){
+      updateMsg.textContent="❌ " + e.message;
+      updateMsg.classList.add("err");
+    }
+  });
+
+  function liveProgressHistory(){
+    memberDocRef.collection("progressHistory").orderBy("timestamp","desc").onSnapshot(snap=>{
+      const ul = document.getElementById("progressHistory");
+      ul.innerHTML = "";
+      snap.forEach(doc=>{
+        const d = doc.data();
+        const t = d.timestamp && d.timestamp.toDate ? d.timestamp.toDate().toLocaleString() : "—";
+        const li = document.createElement("li");
+        li.textContent = `${t} — ${d.progress}`;
+        ul.appendChild(li);
+      });
+    });
+  }
+
+  // ---- Password reset (sends email to logged-in member) ----
+  document.getElementById("resetPwd").addEventListener("click", async ()=>{
+    const user = firebase.auth().currentUser;
+    if(!user || !user.email){ alert("No email found for your account."); return; }
+    try{
+      await firebase.auth().sendPasswordResetEmail(user.email);
+      alert("Password reset email sent.");
+    }catch(e){ alert(e.message); }
+  });
+
+  // ---- Logout ----
+  document.getElementById("logout").addEventListener("click", ()=>{
+    firebase.auth().signOut().then(()=> window.location.href="signin.html");
+  });
+
+  // -------- Recursive Downline tree (based on your Member ID as upline) --------
+  async function fetchChildren(uplineId) {
+    const snap = await db.collection("members").where("upline","==",uplineId).get();
+    const res = [];
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      res.push({
+        id: doc.id,
+        fullName: d.fullName||"",
+        memberId: d.memberId||"",
+        photoURL: d.photoURL||"",
+        // recurse by this child's memberId
+        children: await fetchChildren(d.memberId||"")
+      });
+    }
+    return res;
+  }
+
+  function renderTreeNode(node, ul) {
+    const li = document.createElement("li");
+
+    // expand/collapse only if node has children
+    const hasChildren = node.children && node.children.length > 0;
+    const img = node.photoURL || "https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(node.fullName||"LITA");
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "node";
+
+    if (hasChildren) {
+      const toggle = document.createElement("span");
+      toggle.textContent = "▶";
+      toggle.className = "toggle";
+      wrapper.appendChild(toggle);
+      toggle.addEventListener("click", ()=>{
+        const isHidden = sub.style.display === "none";
+        sub.style.display = isHidden ? "block" : "none";
+        toggle.textContent = isHidden ? "▼" : "▶";
+      });
+    } else {
+      const spacer = document.createElement("span");
+      spacer.style.display = "inline-block";
+      spacer.style.width = "16px";
+      wrapper.appendChild(spacer);
     }
 
-    showFullTree();
-  </script>
+    const avatar = document.createElement("img");
+    avatar.src = img; avatar.alt = ""; avatar.width = 28; avatar.height = 28; avatar.style.borderRadius = "50%";
+    wrapper.appendChild(avatar);
+
+    const label = document.createElement("div");
+    label.innerHTML = `<strong>${node.fullName}</strong> <span class="pill">${node.memberId}</span>`;
+    wrapper.appendChild(label);
+
+    li.appendChild(wrapper);
+
+    let sub = null;
+    if (hasChildren) {
+      sub = document.createElement("ul");
+      sub.className = "tree";
+      sub.style.display = "none"; // start collapsed
+      node.children.forEach(ch => renderTreeNode(ch, sub));
+      li.appendChild(sub);
+    }
+
+    ul.appendChild(li);
+  }
+
+  async function buildAndRenderTree(){
+    const target = document.getElementById("treeRoot");
+    target.innerHTML = "";
+    if(!myMemberId) {
+      target.innerHTML = "<li>No Member ID found on your profile.</li>";
+      return;
+    }
+    // root = me; children = everyone whose upline == my memberId (and so on recursively)
+    const rootNode = {
+      fullName: "Me",
+      memberId: myMemberId,
+      photoURL: myPhotoURL,
+      children: await fetchChildren(myMemberId)
+    };
+    const ul = document.createElement("ul");
+    renderTreeNode(rootNode, ul);
+    target.appendChild(ul);
+  }
+</script>
 </body>
 </html>
-
-
-   
- 
-
-
