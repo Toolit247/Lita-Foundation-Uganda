@@ -2,46 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LITA Admin Dashboard</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
-  <script src="auth.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-  <script> (function(){ emailjs.init("service_mrqs34o"); })(); </script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - LITA</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body class="p-6 bg-gray-50">
-  <h1 class="text-2xl font-bold mb-4">Admin Dashboard</h1>
-  <div class="bg-white p-4 rounded shadow mb-6">
-    <h2 class="text-lg font-bold mb-2">Register New Member</h2>
-    <input id="memberName" placeholder="Full Name" class="border p-2 mb-2 w-full rounded">
-    <input id="memberEmail" placeholder="Email" class="border p-2 mb-2 w-full rounded">
-    <input id="memberID" placeholder="Manual Member ID" class="border p-2 mb-2 w-full rounded">
-    <button onclick="registerMember()" class="bg-green-600 text-white p-2 rounded">Register</button>
-    <p id="status" class="text-sm mt-2"></p>
-  </div>
+<body>
+  <div class="container wide">
+    <h2>📊 Admin Dashboard</h2>
+    <button onclick="logout()" class="btn red">Logout</button>
 
-  <div class="bg-white p-4 rounded shadow">
-    <h2 class="text-lg font-bold mb-2">All Members</h2>
-    <input id="search" onkeyup="searchMembers()" placeholder="Search..." class="border p-2 mb-3 w-full rounded">
-    <button onclick="exportCSV()" class="bg-blue-500 text-white px-3 py-1 rounded">Export CSV</button>
-    <button onclick="exportPDF()" class="bg-red-500 text-white px-3 py-1 rounded ml-2">Export PDF</button>
-    <table id="membersTable" class="w-full mt-3 border">
+    <!-- Register new member -->
+    <h3>📝 Register Member</h3>
+    <form id="registerForm">
+      <input type="text" id="name" placeholder="Full Name" required>
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="text" id="uplineId" placeholder="Upline Member ID (optional)">
+      <input type="text" id="manualId" placeholder="Manual Member ID" required>
+      <button type="submit" class="btn">Register</button>
+    </form>
+    <p id="registerMessage"></p>
+
+    <hr>
+
+    <!-- Member list -->
+    <h3>👥 All Members</h3>
+    <input type="text" id="searchBox" placeholder="Search by name or email">
+    <button onclick="exportCSV()" class="btn">⬇️ Export CSV</button>
+    <button onclick="exportPDF()" class="btn">⬇️ Export PDF</button>
+
+    <table id="membersTable">
       <thead>
-        <tr class="bg-gray-200"><th>Photo</th><th>Name</th><th>Email</th><th>ID</th><th>Action</th></tr>
+        <tr>
+          <th>Photo</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Member ID</th>
+          <th>Upline ID</th>
+          <th>Action</th>
+        </tr>
       </thead>
       <tbody></tbody>
     </table>
+
+    <hr>
+
+    <!-- Tree -->
+    <h3>🌳 Members Tree</h3>
+    <div id="treeContainer"></div>
   </div>
 
-  <div class="bg-white p-4 mt-6 rounded shadow">
-    <h2 class="text-lg font-bold mb-2">Members Tree</h2>
-    <div id="tree"></div>
-  </div>
+  <!-- Firebase + EmailJS -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
+  <script>
+    emailjs.init("service_mrqs34o");
+  </script>
 
-  <script src="admin.js"></script>
-  <script src="tree.js"></script>
+  <!-- Scripts -->
+  <script src="js/firebase.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/tree.js"></script>
 </body>
 </html>
