@@ -1,56 +1,59 @@
-import { getAuth, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
+// js/member.js
+import { auth, db, storage } from './firebase.js';
+import { onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
 
-const auth = getAuth();
-const db = getFirestore();
-const storage = getStorage();
+const logoutBtn = document.getElementById("logoutBtn");
+const photoInput = document.getElementById("photoUpload");
+const profilePhotoEl = document.getElementById("profilePhoto");
 
-// Check login state
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    const docSnap = await getDoc(doc(db, "members", user.uid));
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      document.getElementById("profileName").textContent = data.name;
-      document.getElementById("profileEmail").textContent = data.email;
-      document.getElementById("profileId").textContent = data.manualId;
-
-      if (data.photoURL) {
-        document.getElementById("profilePhoto").src = data.photoURL;
-      }
-    }
-  } else {
-    window.location.href = "signin.html"; // redirect if not logged in
+  if (!user) return window.location.href = "signin.html";
+  const uid = user.uid;
+  const docRef = doc(db, "members", uid);
+  const snap = await getDoc(docRef);
+  if (!snap.exists()) {
+    alert("You are not registered. Contact admin.");
+    await auth.signOut();
+    return window.location.href = "signin.html";
   }
+  const data = snap.data();
+  document.getElementById("m_name").textContent = data.fullName || data.name || "";
+  document.getElementById("m_email").textContent = data.email || "";
+  document.getElementById("m_memberId").textContent = data.memberId || "";
+  document.getElementById("m_upline").textContent = data.upline || "";
+  if (data.photoURL) profilePhotoEl.src = data.photoURL;
+
+  // show tree of downlines for this member
+  const allSnap = await getDocs(collection(db, "members"));
+  const members = allSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  window.renderTreeInContainer && window.renderTreeInContainer(members, document.getElementById("treeContainer"), data.memberId);
 });
 
-// Upload profile photo
-document.getElementById("photoUpload").addEventListener("change", async (e) => {
+// upload profile photo
+photoInput.addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-
   const user = auth.currentUser;
-  const storageRef = ref(storage, `photos/${user.uid}.jpg`);
-  await uploadBytes(storageRef, file);
-  const url = await getDownloadURL(storageRef);
-
-  await updateDoc(doc(db, "members", user.uid), { photoURL: url });
+  if (!user) return alert("Not logged in");
+  const ref = sRef(storage, `profile_photos/${user.uid}/${Date.now()}_${file.name}`);
+  const res = await uploadBytes(ref, file);
+  const url = await getDownloadURL(res.ref);
+  // update firestore
+  await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js").then(mod => mod.updateDoc(doc(db, "members", user.uid), { photoURL: url })).catch(()=>{});
   document.getElementById("profilePhoto").src = url;
-
-  alert("✅ Profile photo updated!");
+  alert("Profile photo uploaded.");
 });
 
-// Password reset
-document.getElementById("resetPassword").addEventListener("click", async () => {
-  const newPass = prompt("Enter your new password:");
-  if (newPass) {
-    await updatePassword(auth.currentUser, newPass);
-    alert("✅ Password updated!");
-  }
+// reset password (send reset email)
+document.getElementById("resetPwd").addEventListener("click", () => {
+  const user = auth.currentUser;
+  if (!user) return alert("Not signed in");
+  sendPasswordResetEmail(auth, user.email)
+    .then(()=> alert("Password reset email sent."))
+    .catch(err=> alert("Error: " + err.message));
 });
 
-// Logout
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  signOut(auth).then(() => (window.location.href = "signin.html"));
-});
+// logout
+logoutBtn.addEventListener("click", () => auth.signOut().then(()=> window.location.href="signin.html"));
