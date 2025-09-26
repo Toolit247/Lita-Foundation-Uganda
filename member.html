@@ -1,37 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Member Dashboard - LITA</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Member — LITA</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container wide">
-    <h2>👤 Member Dashboard</h2>
-    <button onclick="logout()" class="btn red">Logout</button>
+    <header>
+      <h1>Member Dashboard</h1>
+      <button id="logoutBtn" class="btn red">Logout</button>
+    </header>
 
-    <!-- Profile -->
-    <h3>📌 Profile</h3>
-    <img id="profilePhoto" class="avatar large" src="" alt="Profile Photo">
-    <input type="file" id="photoUpload">
-    <p id="memberName"></p>
-    <p id="memberEmail"></p>
-    <p>Member ID: <span id="memberId"></span></p>
-    <button onclick="resetPassword()" class="btn">🔑 Reset Password</button>
+    <section class="card">
+      <h2>My Profile</h2>
+      <img id="profilePhoto" class="avatar large" src="https://via.placeholder.com/100">
+      <input id="photoUpload" type="file" accept="image/*" />
+      <p><strong>Name:</strong> <span id="m_name"></span></p>
+      <p><strong>Email:</strong> <span id="m_email"></span></p>
+      <p><strong>Member ID:</strong> <span id="m_memberId"></span></p>
+      <p><strong>Upline:</strong> <span id="m_upline"></span></p>
+      <button id="resetPwd" class="btn">Reset Password (send reset email)</button>
+    </section>
 
-    <hr>
-
-    <!-- Downline tree -->
-    <h3>🌳 My Downline</h3>
-    <div id="treeContainer"></div>
+    <section class="card">
+      <h2>My Downline</h2>
+      <div id="treeContainer"></div>
+    </section>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="js/firebase.js"></script>
-  <script src="js/member.js"></script>
-  <script src="js/tree.js"></script>
+  <script type="module" src="js/member.js"></script>
+  <script type="module" src="js/tree.js"></script>
 </body>
 </html>
