@@ -1,36 +1,53 @@
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+// js/tree.js (module)
+// Responsible for rendering a nested downline tree.
+// Usage:
+//   window.renderTreeInContainer(membersArray, containerEl [, rootMemberId])
+// where membersArray is [{ memberId, fullName, upline, photoURL, ... }, ...]
+// if rootMemberId given, the tree will be built under that node only; else top-level ROOT nodes shown.
 
-const db = getFirestore();
-
-async function buildTree() {
-  const querySnap = await getDocs(collection(db, "members"));
-  const members = {};
-  querySnap.forEach((doc) => {
-    members[doc.id] = { id: doc.id, ...doc.data(), children: [] };
-  });
-
-  // Build hierarchy
-  Object.values(members).forEach((m) => {
-    if (m.uplineId && members[m.uplineId]) {
-      members[m.uplineId].children.push(m);
+export function buildHierarchy(members) {
+  const byId = {};
+  members.forEach(m => { byId[m.memberId] = { ...m, children: [] }; });
+  const roots = [];
+  members.forEach(m => {
+    const node = byId[m.memberId];
+    if (!node) return;
+    const parentId = m.upline || "ROOT";
+    if (parentId && byId[parentId]) {
+      byId[parentId].children.push(node);
+    } else {
+      roots.push(node);
     }
   });
-
-  // Render
-  const treeRoot = document.getElementById("tree");
-  treeRoot.innerHTML = renderTree(Object.values(members).filter((m) => !m.uplineId));
+  return { byId, roots };
 }
 
-function renderTree(nodes) {
-  return `<ul>${nodes
-    .map(
-      (node) => `
-    <li>
-      ${node.name} (${node.manualId})
-      ${node.children.length ? renderTree(node.children) : ""}
-    </li>`
-    )
-    .join("")}</ul>`;
+export function renderTreeHtml(nodes) {
+  if (!nodes || !nodes.length) return "<p>No members yet</p>";
+  const build = (arr) => {
+    let html = "<ul>";
+    arr.forEach(n => {
+      const img = n.photoURL || ("https://ui-avatars.com/api/?background=E5E7EB&color=111&name=" + encodeURIComponent(n.fullName || n.name || 'LITA'));
+      html += `<li style="margin:6px 0"><div style="display:flex;align-items:center;gap:8px"><img src="${img}" style="width:36px;height:36px;border-radius:50%"/> <strong>${n.fullName || n.name}</strong> <small style="color:#1d4ed8;margin-left:6px">${n.memberId}</small></div>`;
+      if (n.children && n.children.length) html += build(n.children);
+      html += `</li>`;
+    });
+    html += "</ul>";
+    return html;
+  };
+  return build(nodes);
 }
 
-document.addEventListener("DOMContentLoaded", buildTree);
+window.renderTreeInContainer = (membersArray = [], containerEl, rootMemberId = null) => {
+  if (!containerEl) return;
+  const { byId, roots } = buildHierarchy(membersArray);
+  let nodesToRender = roots;
+  if (rootMemberId) {
+    const root = Object.values(byId).find(n => n.memberId === rootMemberId);
+    nodesToRender = root ? [root] : [];
+  }
+  containerEl.innerHTML = renderTreeHtml(nodesToRender);
+};
+
+// Also export default helpers for other modules if needed
+export default { buildHierarchy, renderTreeHtml };
