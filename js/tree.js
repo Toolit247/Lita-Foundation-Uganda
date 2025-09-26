@@ -1,31 +1,36 @@
-function renderTree(members) {
-  const container = document.getElementById("treeContainer");
-  if (!container) return;
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-  function buildNode(memberId, all) {
-    const children = all.filter(m => m.uplineId === memberId);
-    return {
-      id: memberId,
-      children: children.map(c => buildNode(c.memberId, all))
-    };
-  }
+const db = getFirestore();
 
-  const rootNodes = members.filter(m => !m.uplineId);
-  container.innerHTML = "";
-
-  rootNodes.forEach(root => {
-    const ul = document.createElement("ul");
-    function render(node) {
-      const li = document.createElement("li");
-      li.textContent = node.id;
-      if (node.children.length > 0) {
-        const ulChild = document.createElement("ul");
-        node.children.forEach(c => ulChild.appendChild(render(c)));
-        li.appendChild(ulChild);
-      }
-      return li;
-    }
-    ul.appendChild(render(buildNode(root.memberId, members)));
-    container.appendChild(ul);
+async function buildTree() {
+  const querySnap = await getDocs(collection(db, "members"));
+  const members = {};
+  querySnap.forEach((doc) => {
+    members[doc.id] = { id: doc.id, ...doc.data(), children: [] };
   });
+
+  // Build hierarchy
+  Object.values(members).forEach((m) => {
+    if (m.uplineId && members[m.uplineId]) {
+      members[m.uplineId].children.push(m);
+    }
+  });
+
+  // Render
+  const treeRoot = document.getElementById("tree");
+  treeRoot.innerHTML = renderTree(Object.values(members).filter((m) => !m.uplineId));
 }
+
+function renderTree(nodes) {
+  return `<ul>${nodes
+    .map(
+      (node) => `
+    <li>
+      ${node.name} (${node.manualId})
+      ${node.children.length ? renderTree(node.children) : ""}
+    </li>`
+    )
+    .join("")}</ul>`;
+}
+
+document.addEventListener("DOMContentLoaded", buildTree);
