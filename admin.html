@@ -1,68 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - LITA</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin — LITA</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container wide">
-    <h2>📊 Admin Dashboard</h2>
-    <button onclick="logout()" class="btn red">Logout</button>
+    <header>
+      <h1>Admin Dashboard — LITA</h1>
+      <button id="logoutBtn" class="btn red">Logout</button>
+    </header>
 
-    <!-- Register new member -->
-    <h3>📝 Register Member</h3>
-    <form id="registerForm">
-      <input type="text" id="name" placeholder="Full Name" required>
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="text" id="uplineId" placeholder="Upline Member ID (optional)">
-      <input type="text" id="manualId" placeholder="Manual Member ID" required>
-      <button type="submit" class="btn">Register</button>
-    </form>
-    <p id="registerMessage"></p>
+    <section class="card">
+      <h2>Register Member</h2>
+      <form id="registerForm">
+        <input id="r_fullName" placeholder="Full name" required />
+        <input id="r_email" type="email" placeholder="Email" required />
+        <input id="r_phone" placeholder="Phone" />
+        <select id="r_gender"><option value="">Gender</option><option>Male</option><option>Female</option></select>
+        <input id="r_location" placeholder="Location" />
+        <input id="r_upline" placeholder="Upline Member ID (or ROOT)" />
+        <input id="r_memberId" placeholder="Manual Member ID" required />
+        <input id="r_tempPass" placeholder="Temporary password (leave blank to auto-generate)" />
+        <button type="submit" class="btn">Register</button>
+      </form>
+      <p id="registerMessage"></p>
+    </section>
 
-    <hr>
+    <section class="card">
+      <h2>All Members</h2>
+      <input id="searchBox" placeholder="Search by name, email, member ID..." />
+      <div style="margin-top:8px">
+        <button id="exportCSV" class="btn">Export CSV</button>
+        <button id="exportPDF" class="btn">Export PDF</button>
+      </div>
 
-    <!-- Member list -->
-    <h3>👥 All Members</h3>
-    <input type="text" id="searchBox" placeholder="Search by name or email">
-    <button onclick="exportCSV()" class="btn">⬇️ Export CSV</button>
-    <button onclick="exportPDF()" class="btn">⬇️ Export PDF</button>
+      <table id="membersTable">
+        <thead><tr><th>Photo</th><th>Name</th><th>Email</th><th>Member ID</th><th>Upline</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-    <table id="membersTable">
-      <thead>
-        <tr>
-          <th>Photo</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Member ID</th>
-          <th>Upline ID</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <hr>
-
-    <!-- Tree -->
-    <h3>🌳 Members Tree</h3>
-    <div id="treeContainer"></div>
+    <section class="card">
+      <h2>Members Tree</h2>
+      <div id="treeContainer"></div>
+    </section>
   </div>
 
-  <!-- Firebase + EmailJS -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- deps -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
-  <script>
-    emailjs.init("service_mrqs34o");
-  </script>
 
-  <!-- Scripts -->
-  <script src="js/firebase.js"></script>
-  <script src="js/admin.js"></script>
-  <script src="js/tree.js"></script>
+  <!-- modules -->
+  <script type="module" src="js/admin.js"></script>
+  <script type="module" src="js/tree.js"></script>
 </body>
 </html>
