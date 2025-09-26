@@ -1,56 +1,56 @@
-const authM = firebase.auth();
-const dbM = firebase.firestore();
+import { getAuth, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
 
-// Logout
-function logout() {
-  authM.signOut().then(() => window.location.href = "signin.html");
-}
+const auth = getAuth();
+const db = getFirestore();
+const storage = getStorage();
 
-// Load profile
-authM.onAuthStateChanged(async user => {
-  if (!user) return window.location.href = "signin.html";
+// Check login state
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const docSnap = await getDoc(doc(db, "members", user.uid));
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      document.getElementById("profileName").textContent = data.name;
+      document.getElementById("profileEmail").textContent = data.email;
+      document.getElementById("profileId").textContent = data.manualId;
 
-  const doc = await dbM.collection("members").doc(user.uid).get();
-  if (!doc.exists) {
-    alert("Not a registered member.");
-    return authM.signOut();
+      if (data.photoURL) {
+        document.getElementById("profilePhoto").src = data.photoURL;
+      }
+    }
+  } else {
+    window.location.href = "signin.html"; // redirect if not logged in
   }
-  const data = doc.data();
-  document.getElementById("memberName").textContent = data.name;
-  document.getElementById("memberEmail").textContent = data.email;
-  document.getElementById("memberId").textContent = data.memberId;
-  if (data.photoURL) document.getElementById("profilePhoto").src = data.photoURL;
-
-  loadDownline(data.memberId);
 });
 
-// Upload photo
-document.getElementById("photoUpload").addEventListener("change", async e => {
+// Upload profile photo
+document.getElementById("photoUpload").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onloadend = async () => {
-    const base64 = reader.result;
-    const user = authM.currentUser;
-    await dbM.collection("members").doc(user.uid).update({ photoURL: base64 });
-    document.getElementById("profilePhoto").src = base64;
-  };
-  reader.readAsDataURL(file);
+  const user = auth.currentUser;
+  const storageRef = ref(storage, `photos/${user.uid}.jpg`);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
+
+  await updateDoc(doc(db, "members", user.uid), { photoURL: url });
+  document.getElementById("profilePhoto").src = url;
+
+  alert("✅ Profile photo updated!");
 });
 
-// Reset password
-function resetPassword() {
-  const user = authM.currentUser;
-  if (user) {
-    authM.sendPasswordResetEmail(user.email)
-      .then(() => alert("📧 Password reset email sent."))
-      .catch(err => alert("❌ " + err.message));
+// Password reset
+document.getElementById("resetPassword").addEventListener("click", async () => {
+  const newPass = prompt("Enter your new password:");
+  if (newPass) {
+    await updatePassword(auth.currentUser, newPass);
+    alert("✅ Password updated!");
   }
-}
+});
 
-// Load downline
-async function loadDownline(myId) {
-  const snapshot = await dbM.collection("members").where("uplineId", "==", myId).get();
-  renderTree(snapshot.docs.map(d => d.data()));
-}
+// Logout
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  signOut(auth).then(() => (window.location.href = "signin.html"));
+});
