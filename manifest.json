@@ -1,11 +1,10 @@
 {
   "name": "LITA Foundation Uganda",
   "short_name": "LITA",
-  "description": "Member registration and business tracking platform for LITA Foundation Uganda",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "theme_color": "#0d6efd",
   "orientation": "portrait",
   "icons": [
     {
