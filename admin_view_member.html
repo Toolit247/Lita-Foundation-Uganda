@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Member Profile - LITA</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <span class="logo">Member Profile</span>
+    <button id="logout" class="btn btn-secondary">Logout</button>
+  </nav>
+
+  <main class="container">
+    <div id="profileCard" class="card"></div>
+    <h3>Progress History</h3>
+    <ul id="progressHistory"></ul>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="js/firebase.js"></script>
+  <script src="js/admin_view_member.js"></script>
+</body>
+</html>
