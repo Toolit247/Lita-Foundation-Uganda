@@ -3,43 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Member Dashboard - LITA Foundation Uganda</title>
+  <title>Member Dashboard - LITA</title>
   <link rel="stylesheet" href="styles.css">
-  <script type="module" src="member.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 </head>
 <body>
-  <div class="navbar">
-    <h1>Member Dashboard</h1>
-    <div>
-      <a href="index.html">Home</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    </div>
-  </div>
+  <nav class="navbar">
+    <span class="logo">Member Dashboard</span>
+    <button id="logout" class="btn btn-secondary">Logout</button>
+  </nav>
 
-  <div class="container">
-    <div class="card">
-      <h2>Submit Business Progress</h2>
-      <form id="progressForm">
-        <input type="text" id="businessName" placeholder="Business Name" required>
-        <textarea id="progressUpdate" placeholder="Describe your progress..." required></textarea>
-        <button type="submit">Submit Progress</button>
-      </form>
-    </div>
+  <main class="container">
+    <h2>👤 Profile</h2>
+    <div id="profileCard" class="card"></div>
 
-    <div class="card">
-      <h2>My Progress History</h2>
-      <table id="progressTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Update</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Populated by member.js -->
-        </tbody>
-      </table>
-    </div>
-  </div>
+    <h2>📈 My Downline</h2>
+    <div id="downlineTree"></div>
+  </main>
+
+  <script src="js/firebase.js"></script>
+  <script src="js/member.js"></script>
+  <script src="js/tree.js"></script>
 </body>
 </html>
