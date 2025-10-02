@@ -1,234 +1,94 @@
-/* Global Reset */
-* {
+/* Global styling */
+body {
+  font-family: 'Segoe UI', sans-serif;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  background: #f4f6f8;
 }
 
-/* Body */
-body {
-  font-family: 'Inter', sans-serif;
-  background: #f0f2f5;
-  color: #333;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Headings */
-h1, h2, h3 {
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #0d6efd;
-}
-
-/* Containers */
-.container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 20px;
-}
-
-/* Card Style */
-.card {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  margin: 1rem auto;
-}
-
-/* Buttons */
-.btn {
-  display: inline-block;
-  background: #0d6efd;
-  color: #fff;
-  padding: 0.75rem 1.2rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.btn:hover {
-  background: #0b5ed7;
-}
-
-.btn-danger {
-  background: #dc3545;
-}
-
-.btn-danger:hover {
-  background: #bb2d3b;
-}
-
-/* Forms */
-input, select, textarea {
-  width: 100%;
-  padding: 0.8rem;
-  margin: 0.5rem 0 1rem 0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-}
-
-label {
-  font-weight: 500;
-  margin-bottom: 0.3rem;
-  display: block;
-}
-
-/* Links */
-a {
-  color: #0d6efd;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-/* Navigation */
 .navbar {
-  background: #0d6efd;
-  padding: 1rem;
-  color: #fff;
+  background: #4CAF50;
+  color: white;
+  padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.navbar h2 {
-  margin: 0;
-  color: #fff;
+.navbar .logo {
+  font-weight: bold;
+  font-size: 18px;
 }
 
-.navbar .nav-links a {
-  color: #fff;
-  margin-left: 1rem;
+.container {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 20px;
 }
 
-.navbar .nav-links a:hover {
-  text-decoration: underline;
+.container.center {
+  text-align: center;
 }
 
-/* Dashboard Tables */
+.container.small {
+  max-width: 400px;
+}
+
+.card {
+  background: #fff;
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+  border: none;
+}
+
+.btn-secondary {
+  background: #555;
+  color: white;
+  border: none;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  margin-top: 15px;
 }
 
 .table th, .table td {
-  padding: 0.8rem;
-  border-bottom: 1px solid #ddd;
-  text-align: left;
+  border: 1px solid #ddd;
+  padding: 8px;
 }
 
 .table th {
-  background: #f8f9fa;
-  font-weight: 600;
+  background: #4CAF50;
+  color: white;
 }
 
-/* Profile Section */
-.profile {
-  text-align: center;
+.message {
+  margin-top: 10px;
+  color: red;
+  font-size: 14px;
 }
 
-.profile img {
-  width: 120px;
-  height: 120px;
+.profile-photo {
+  max-width: 100px;
   border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 1rem;
-}
-
-/* Tree View */
-.tree {
-  margin-top: 2rem;
-  text-align: center;
-}
-
-.tree ul {
-  padding-top: 20px;
-  position: relative;
-  display: inline-block;
-}
-
-.tree li {
-  display: inline-block;
-  text-align: center;
-  position: relative;
-  padding: 20px 5px 0 5px;
-}
-
-.tree li::before, .tree li::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 50%;
-  border-top: 2px solid #ccc;
-  width: 50%;
-  height: 20px;
-}
-
-.tree li::after {
-  right: auto;
-  left: 50%;
-  border-left: 2px solid #ccc;
-}
-
-.tree li:only-child::before, 
-.tree li:only-child::after {
-  display: none;
-}
-
-.tree li:only-child { padding-top: 0; }
-
-.tree li > ul::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  border-left: 2px solid #ccc;
-  height: 20px;
-}
-
-.tree li .member {
-  display: inline-block;
-  padding: 8px 12px;
-  border-radius: 6px;
-  background: #0d6efd;
-  color: #fff;
-  font-weight: 500;
-}
-
-/* Footer */
-footer {
-  margin-top: auto;
-  padding: 1rem;
-  background: #f8f9fa;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #666;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .navbar {
-    flex-direction: column;
-  }
-  .navbar .nav-links {
-    margin-top: 0.5rem;
-  }
-  .card {
-    padding: 1rem;
-  }
-  .tree li {
-    padding: 10px 2px 0 2px;
-  }
 }
