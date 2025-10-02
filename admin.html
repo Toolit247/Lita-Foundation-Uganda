@@ -3,36 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - LITA Foundation Uganda</title>
+  <title>Admin Dashboard - LITA</title>
   <link rel="stylesheet" href="styles.css">
-  <script type="module" src="admin.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
-  <div class="navbar">
-    <h1>Admin Dashboard</h1>
-    <div>
-      <a href="index.html">Home</a>
-      <a href="#" id="logoutBtn">Logout</a>
-    </div>
-  </div>
+  <nav class="navbar">
+    <span class="logo">Admin Dashboard</span>
+    <button id="logout" class="btn btn-secondary">Logout</button>
+  </nav>
 
-  <div class="container">
-    <div class="card">
-      <h2>Registered Members</h2>
-      <table id="membersTable">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Business</th>
-            <th>Progress Updates</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Populated by admin.js -->
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <main class="container">
+    <h2>📋 Register New Member</h2>
+    <form id="registerForm" class="card">
+      <input type="text" id="fullName" placeholder="Full Name" required>
+      <input type="email" id="regEmail" placeholder="Email" required>
+      <input type="text" id="phone" placeholder="Phone" required>
+      <input type="text" id="gender" placeholder="Gender" required>
+      <input type="text" id="location" placeholder="Location" required>
+      <input type="text" id="upline" placeholder="Upline ID (if any)">
+      <input type="text" id="memberID" placeholder="Manual Member ID" required>
+      <button type="submit" class="btn btn-primary">Register</button>
+      <div id="registerMessage" class="message"></div>
+    </form>
+
+    <h2>👥 All Members</h2>
+    <input type="text" id="searchBox" placeholder="Search members...">
+    <button id="exportCSV" class="btn btn-secondary">⬇️ Export CSV</button>
+    <button id="exportPDF" class="btn btn-secondary">⬇️ Export PDF</button>
+
+    <table id="membersTable" class="table">
+      <thead>
+        <tr>
+          <th>Name</th><th>Email</th><th>Phone</th><th>ID</th><th>Upline</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </main>
+
+  <script src="js/firebase.js"></script>
+  <script src="js/admin.js"></script>
 </body>
 </html>
